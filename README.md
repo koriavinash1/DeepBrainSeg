@@ -7,3 +7,7 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 
 # Results
 ![Results](./results.png)
+
+## Contact 
+
+* Avinash Kori (avinashgkori@smail.iitm.ac.in)
