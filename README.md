@@ -8,6 +8,8 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 # Results
 ![Results](./results.png)
 
+### For training code please refer this ![repo](https://github.com/koriavinash1/BraTs2018)
+
 ## Contact 
 
 * Avinash Kori (avinashgkori@smail.iitm.ac.in)
