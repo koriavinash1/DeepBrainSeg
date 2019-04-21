@@ -8,19 +8,11 @@ parser.add_argument('--input_path', type=str ,default='./data/Test',
 
 args = parser.parse_args()
 
-print
-print
 print ('The specified antspath is:',args.ants_path)
-print
-print
 print ('The specified inputpath is',args.input_path)
-print
-print
-
 
 input_path= args.input_path
 ANTSPATH  = args.ants_path
-
 
 input_path,patients, files = next(os.walk(input_path))
 
@@ -41,8 +33,4 @@ for p in patients:
             os.system(ANTSPATH+'ImageMath 3 '+mask_file+' ME '+mask_file+' 1')
             os.system(ANTSPATH+'CopyImageHeaderInformation '+input_file+' '+mask_file+' '+mask_file+' 1 1 1')
 
-print
-print
 print ('mask generation completed. Please check the input directory to see the mask')
-print
-print

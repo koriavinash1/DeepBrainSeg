@@ -10,6 +10,29 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 
 ### For training code please refer this ![repo](https://github.com/koriavinash1/BraTs2018)
 
+
+# Steps to follow:
+
++ Our Algo. uses masks to be generated before training/testing. We make use of antsbin for mask generation. Use helper_mask.py for mask generation.
+
++ This repo. provides ensemble of different models for segmentation. (a) ABLNet (modelABL.py, Air brain Lesion Network), (b) 3DBrainNet (model3DBNET.py, 3D multiresolution CNN), (c) Tiramisu2D (modelTis2D.py, 57 layered 2D CNN) and (d) Tiramisu 3D (modelTir3D.py, 57 layered 3D CNN)
+
++ More details about network architecture and training procedure can be found ![here](https://github.com/koriavinash1/DeepBrainSeg.git)
+
+# Citation
+
+If you use some of our work, please cite our work:
+
+```
+@inproceedings{kori2018ensemble,
+  title={Ensemble of Fully Convolutional Neural Network for Brain Tumor Segmentation from Magnetic Resonance Images},
+  author={Kori, Avinash and Soni, Mehul and Pranjal, B and Khened, Mahendra and Alex, Varghese and Krishnamurthi, Ganapathy},
+  booktitle={International MICCAI Brainlesion Workshop},
+  pages={485--496},
+  year={2018},
+  organization={Springer}
+}
+``` 
 ## Contact 
 
-* Avinash Kori (avinashgkori@smail.iitm.ac.in)
+* Avinash Kori (avinashgkori@smail.iitm.ac.in or koriavinash1@gmail.com)
