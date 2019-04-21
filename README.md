@@ -8,7 +8,7 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 # Results
 ![Results](./results.png)
 
-### For training code please refer this ![repo](https://github.com/koriavinash1/BraTs2018)
+### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
 
 
 # Steps to follow:
@@ -17,7 +17,7 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 
 + This repo. provides ensemble of different models for segmentation. (a) ABLNet (modelABL.py, Air brain Lesion Network), (b) 3DBrainNet (model3DBNET.py, 3D multiresolution CNN), (c) Tiramisu2D (modelTis2D.py, 57 layered 2D CNN) and (d) Tiramisu 3D (modelTir3D.py, 57 layered 3D CNN)
 
-+ More details about network architecture and training procedure can be found ![here](https://github.com/koriavinash1/DeepBrainSeg.git)
++ More details about network architecture and training procedure can be found [here](https://github.com/koriavinash1/DeepBrainSeg.git)
 
 # Citation
 
