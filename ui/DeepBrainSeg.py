@@ -158,7 +158,7 @@ class Toplevel1:
         self.Button1 = tk.Button(self.Flair_Frame)
         self.Button1.place(relx=0.255, rely=0.836, height=35, width=110)
         self.Button1.configure(activebackground="#f9f9f9")
-        self.Button1.configure(command=DeepBrainSeg_support.Load_Flair)
+        self.Button1.configure(command=self.Load_Flair)
         self.Button1.configure(compound='center')
         self.Button1.configure(text='''Load Flair''')
 
@@ -179,7 +179,7 @@ class Toplevel1:
         self.Button2 = tk.Button(self.T1Frame)
         self.Button2.place(relx=0.286, rely=0.836, height=35, width=110)
         self.Button2.configure(activebackground="#f9f9f9")
-        self.Button2.configure(command=DeepBrainSeg_support.Load_T1)
+        self.Button2.configure(command=self.Load_T1)
         self.Button2.configure(compound='center')
         self.Button2.configure(text='''Load T1''')
 
@@ -200,7 +200,7 @@ class Toplevel1:
         self.Button3 = tk.Button(self.T1ceFrame)
         self.Button3.place(relx=0.314, rely=0.836, height=35, width=100)
         self.Button3.configure(activebackground="#f9f9f9")
-        self.Button3.configure(command=DeepBrainSeg_support.Load_T1ce)
+        self.Button3.configure(command=self.Load_T1ce)
         self.Button3.configure(compound='center')
         self.Button3.configure(text='''Load T1ce''')
 
@@ -242,7 +242,7 @@ class Toplevel1:
         self.Button5 = tk.Button(self.SegFrame)
         self.Button5.place(relx=0.213, rely=0.836, height=35, width=160)
         self.Button5.configure(activebackground="#f9f9f9")
-        self.Button5.configure(command=DeepBrainSeg_support.Get_Segmentation)
+        self.Button5.configure(command=self.Get_Segmentation)
         self.Button5.configure(compound='center')
         self.Button5.configure(text='''Get Segmentation''')
 
@@ -299,14 +299,46 @@ class Toplevel1:
         filename = filedialog.askopenfilename()
         nib_vol = nib.load(filename)
         self.affine = nib_vol.affine
-        self.T2_vol = nib_vol.get_data()
+        self.T1_vol = nib_vol.get_data()
 
-        mid_slice = self.T2_vol.shape[2]//2
-        size = (self.T2_canvas.winfo_width(), self.T2_canvas.winfo_height())
+        mid_slice = self.T1_vol.shape[2]//2
+        size = (self.T1_canvas.winfo_width(), self.T1_canvas.winfo_height())
 
-        self.T2_canvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.T2_vol[:,:,mid_slice].T).resize(size))
-        self.T2_canvas.create_image(0, 0, image=self.T2_canvas_image, anchor=tk.NW)
-        self.update_main_view(self.T2_vol, self.T2_vol.shape[0]//2, self.T2_vol.shape[1]//2, self.T2_vol.shape[2]//2)
+        self.T1_canvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.T1_vol[:,:,mid_slice].T).resize(size))
+        self.T1_canvas.create_image(0, 0, image=self.T1_canvas_image, anchor=tk.NW)
+        self.update_main_view(self.T1_vol, self.T1_vol.shape[0]//2, self.T1_vol.shape[1]//2, self.T1_vol.shape[2]//2)
+
+
+    def Load_Flair(self, event=None):
+        filename = filedialog.askopenfilename()
+        nib_vol = nib.load(filename)
+        self.affine = nib_vol.affine
+        self.Flair_vol = nib_vol.get_data()
+
+        mid_slice = self.Flair_vol.shape[2]//2
+        size = (self.Flair_canvas.winfo_width(), self.Flair_canvas.winfo_height())
+
+        self.Flair_canvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.Flair_vol[:,:,mid_slice].T).resize(size))
+        self.Flair_canvas.create_image(0, 0, image=self.Flair_canvas_image, anchor=tk.NW)
+        self.update_main_view(self.Flair_vol, self.Flair_vol.shape[0]//2, self.Flair_vol.shape[1]//2, self.Flair_vol.shape[2]//2)
+
+
+    def Load_T1ce(self, event=None):
+        filename = filedialog.askopenfilename()
+        nib_vol = nib.load(filename)
+        self.affine = nib_vol.affine
+        self.T1ce_vol = nib_vol.get_data()
+
+        mid_slice = self.T1ce_vol.shape[2]//2
+        size = (self.T1ce_canvas.winfo_width(), self.T1ce_canvas.winfo_height())
+
+        self.T1ce_canvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.T1ce_vol[:,:,mid_slice].T).resize(size))
+        self.T1ce_canvas.create_image(0, 0, image=self.T1ce_canvas_image, anchor=tk.NW)
+        self.update_main_view(self.T1ce_vol, self.T1ce_vol.shape[0]//2, self.T1ce_vol.shape[1]//2, self.T1ce_vol.shape[2]//2)
+
+    
+    def GetSegmentation(self, event=None):
+        pass
 
 
 if __name__ == '__main__':
