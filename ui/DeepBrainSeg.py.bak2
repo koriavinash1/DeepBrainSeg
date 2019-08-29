@@ -81,9 +81,8 @@ class Toplevel1:
             [('selected', _compcolor), ('active',_ana2color)])
 
         top.geometry("1385x947+327+65")
-        top.title("DeBUG")
+        top.title("New Toplevel")
         top.configure(highlightcolor="black")
-        self.progress_bar = 0
 
         self.Frame1 = tk.Frame(top)
         self.Frame1.place(relx=0.007, rely=0.137, relheight=0.85, relwidth=0.986)
@@ -98,6 +97,10 @@ class Toplevel1:
         self.Frame2.configure(borderwidth="2")
         self.Frame2.configure(relief="groove")
 
+        self.TProgressbar1 = ttk.Progressbar(self.Frame2)
+        self.TProgressbar1.place(relx=0.007, rely=0.948, relwidth=0.981
+                , relheight=0.0, height=19)
+        self.TProgressbar1.configure(variable=DeepBrainSeg_support.progress_bar)
 
         self.Frame9 = tk.Frame(self.Frame2)
         self.Frame9.place(relx=0.007, rely=0.021, relheight=0.918
@@ -260,95 +263,23 @@ class Toplevel1:
         self.seg_canvas.configure(relief="ridge")
         self.seg_canvas.configure(selectbackground="#c4c4c4")
 
+        self.SegmentationOverlay = tk.Button(self.Frame1)
+        self.SegmentationOverlay.place(relx=0.432, rely=0.0, height=25
+                , width=190)
+        self.SegmentationOverlay.configure(activebackground="#f9f9f9")
+        self.SegmentationOverlay.configure(command=DeepBrainSeg_support.SegmentationOverlay)
+        self.SegmentationOverlay.configure(text='''Segmentation overlay''')
+
         self.LogoCanvas = tk.Canvas(top)
         self.LogoCanvas.place(relx=0.007, rely=0.011, relheight=0.117
                 , relwidth=0.983)
         self.LogoCanvas.configure(borderwidth="2")
         self.LogoCanvas.configure(relief="ridge")
         self.LogoCanvas.configure(selectbackground="#c4c4c4")
-
-
-        self.slice1 = 0
-        self.slice2 = 0
-        self.slice3 = 0
-
-        ########### radio buttons ###############
-        self.Button6 = tk.Button(self.Frame2)
-        self.Button6.place(relx=0.097, rely=0.0, height=25, width=91)
-        self.Button6.configure(command=self.FlairView)
-        self.Button6.configure(text='''FlairView''')
-
-        self.Button7 = tk.Button(self.Frame2)
-        self.Button7.place(relx=0.275, rely=0.0, height=25, width=70)
-        self.Button7.configure(command=self.T1View)
-        self.Button7.configure(text='''T1View''')
-
-        self.Button8 = tk.Button(self.Frame2)
-        self.Button8.place(relx=0.454, rely=0.0, height=25, width=84)
-        self.Button8.configure(command=self.T1ceView)
-        self.Button8.configure(text='''T1ceView''')
-
-        self.Button9 = tk.Button(self.Frame2)
-        self.Button9.place(relx=0.647, rely=0.0, height=25, width=70)
-        self.Button9.configure(command=self.T2View)
-        self.Button9.configure(text='''T2View''')
-
-        self.Button10 = tk.Button(self.Frame2)
-        self.Button10.place(relx=0.803, rely=0.0, height=25
-                , width=161)
-        self.Button10.configure(command=self.SegmentationOverlay)
-        self.Button10.configure(text='''SegmentationOverlay''')
-
-
-
-    def init_scales(self, vol):
-        """
-        """
-        self.slice1 = vol.shape[0]//2
-        self.slice2 = vol.shape[1]//2
-        self.slice3 = vol.shape[2]//2
-        x_size, y_size, z_size = vol.shape
-
-        self.Scale1 = tk.Scale(self.Frame10, from_=0.0, to=z_size)
-        self.Scale1.place(relx=0.871, rely=0.025, relwidth=0.0, relheight=0.942
-                , width=46, bordermode='ignore')
-        self.Scale1.configure(activebackground="#f9f9f9")
-        self.Scale1.configure(command=self.AxialScroll)
-        self.Scale1.configure(length="368")
-        self.Scale1.configure(troughcolor="#d9d9d9")
-
-
-        self.Scale2 = tk.Scale(self.Frame11, from_=0.0, to=y_size)
-        self.Scale2.place(relx=0.871, rely=0.025, relwidth=0.0, relheight=0.942
-                , width=46, bordermode='ignore')
-        self.Scale2.configure(activebackground="#f9f9f9")
-        self.Scale2.configure(command=self.SagitalScroll)
-        self.Scale2.configure(digits="50")
-        self.Scale2.configure(length="368")
-        self.Scale2.configure(troughcolor="#d9d9d9")
-
-
-        self.Scale3 = tk.Scale(self.Frame12, from_=0.0, to=x_size)
-        self.Scale3.place(relx=0.871, rely=0.025, relwidth=0.0, relheight=0.942
-                , width=46, bordermode='ignore')
-        self.Scale3.configure(activebackground="#f9f9f9")
-        self.Scale3.configure(command=self.CorronalScroll)
-        self.Scale3.configure(length="368")
-        self.Scale3.configure(troughcolor="#d9d9d9")
-
-
-        self.TProgressbar1 = ttk.Progressbar(self.Frame2)
-        self.TProgressbar1.place(relx=0.007, rely=0.948, relwidth=0.981
-                , relheight=0.0, height=19)
-        self.TProgressbar1.configure(variable=self.progress_bar)
-
     
 
     def update_main_view(self, vol, slice1, slice2, slice3):
-        """
-        """
-        print (self.slice1, self.slice2, self.slice3)
-        self.main_vol = vol
+
         true_size = vol.shape[:2]
         size = (self.AxialCanvas.winfo_width(), self.AxialCanvas.winfo_height())
         size = (size[0], int(true_size[0]/true_size[1])*size[1]) if size[0] < size[1] else (int(true_size[1]/true_size[0])*size[0], size[1])
@@ -371,76 +302,10 @@ class Toplevel1:
     
         self.CorronalCanvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(plot_normalize(np.flipud(vol[slice1, :, :].T))).resize(size))
         self.CorronalCanvas.create_image(0, 0, image=self.CorronalCanvas_image, anchor=tk.NW)
-        
-
-
-    def T1View(self):
-        print ("T1View")
-        self.main_vol = self.T1_vol
-        self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
-        pass
-
-
-    def T2View(self):
-        print ("T2 view")
-        self.main_vol = self.T2_vol
-        self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
-        pass
-
-
-    def T1ceView(self):
-        print ("T1ce view")
-        self.main_vol = self.T1ce_vol
-        self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
-        pass
-
-
-    def FlairView(self):
-        print ("Flair View")
-        self.main_vol = self.Flair_vol
-        self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
-        pass
-
-    def SegmentationView(self):
-        print ("segmentation view")
-        self.main_vol = self.prediction
-        self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
-        pass
-
-
-    def SegmentationOverlay(self):
-        print ("overlay view")
-        self.main_vol = self.prediction
-        self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
-        pass
-
-
-
-
-    def AxialScroll(self, *args):
-        print('AxialScroll', int(args[0]))
-        self.slice3 = max(0, int(args[0]) - 1)
-        self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
-        pass
-
-    def SagitalScroll(self, *args):
-        print('SagitalScroll', int(args[0]))
-        self.slice2 = max(0, int(args[0]) - 1)
-        self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
-        pass
-
-    def CorronalScroll(self, *args):
-        print('CorronalScroll', int(args[0]))
-        self.slice1 = max(0, int(args[0]) - 1)
-        self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
-        pass
-
-
 
 
     def Load_T2(self, event=None):
-        """
-        """
+
         filename = filedialog.askopenfilename()
         nib_vol = nib.load(filename)
         self.affine = nib_vol.affine
@@ -455,9 +320,7 @@ class Toplevel1:
         self.T2_canvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(plot_normalize(self.T2_vol[:,:,mid_slice].T)).resize(size))
         self.T2_canvas.create_image(0, 0, image=self.T2_canvas_image, anchor=tk.NW)
         self.update_main_view(self.T2_vol, self.T2_vol.shape[0]//2, self.T2_vol.shape[1]//2, self.T2_vol.shape[2]//2)
-        self.init_scales(self.T2_vol)
-
-
+    
     def Load_T1(self, event=None):
         filename = filedialog.askopenfilename()
         nib_vol = nib.load(filename)
@@ -474,7 +337,6 @@ class Toplevel1:
         self.T1_canvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(plot_normalize(self.T1_vol[:,:,mid_slice].T)).resize(size))
         self.T1_canvas.create_image(0, 0, image=self.T1_canvas_image, anchor=tk.NW)
         self.update_main_view(self.T1_vol, self.T1_vol.shape[0]//2, self.T1_vol.shape[1]//2, self.T1_vol.shape[2]//2)
-        self.init_scales(self.T1_vol)
 
 
     def Load_Flair(self, event=None):
@@ -493,7 +355,6 @@ class Toplevel1:
         self.Flair_canvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(plot_normalize(self.Flair_vol[:,:,mid_slice].T)).resize(size))
         self.Flair_canvas.create_image(0, 0, image=self.Flair_canvas_image, anchor=tk.NW)
         self.update_main_view(self.Flair_vol, self.Flair_vol.shape[0]//2, self.Flair_vol.shape[1]//2, self.Flair_vol.shape[2]//2)
-        self.init_scales(self.Flair_vol)
 
 
     def Load_T1ce(self, event=None):
@@ -512,7 +373,6 @@ class Toplevel1:
         self.T1ce_canvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(plot_normalize(self.T1ce_vol[:,:,mid_slice].T)).resize(size))
         self.T1ce_canvas.create_image(0, 0, image=self.T1ce_canvas_image, anchor=tk.NW)
         self.update_main_view(self.T1ce_vol, self.T1ce_vol.shape[0]//2, self.T1ce_vol.shape[1]//2, self.T1ce_vol.shape[2]//2)
-        self.init_scales(self.T1ce_vol)
 
     
     def Get_Segmentation(self, event=None):
@@ -525,15 +385,6 @@ class Toplevel1:
             ValueError 
 
         self.prediction = get_brainsegmentation(self.T1_vol, self.T2_vol, self.T1ce_vol, self.Flair_vol)
-
-        mid_slice = self.prediction.shape[2]//2
-
-        true_size = self.T1ce_vol.shape[:2]
-        size = (self.T1ce_canvas.winfo_width(), self.T1ce_canvas.winfo_height())
-        size = (size[0], int(true_size[0]/true_size[1])*size[1]) if size[0] < size[1] else (int(true_size[1]/true_size[0])*size[0], size[1])
-
-        self.seg_canvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(plot_normalize(self.prediction[:,:,mid_slice].T)).resize(size))
-        self.seg_canvas.create_image(0, 0, image=self.seg_canvas_image, anchor=tk.NW)
         self.update_main_view(self.prediction, self.prediction.shape[0]//2, self.prediction.shape[1]//2, self.prediction.shape[2]//2)
 
         pass
