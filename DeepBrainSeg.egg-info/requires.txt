@@ -1,0 +1,8 @@
+requests
+pytorch-gpu
+torchvisionnibabel
+SimpleITKtqdm
+pandas
+scipy
+pydensecrf
+skimage
