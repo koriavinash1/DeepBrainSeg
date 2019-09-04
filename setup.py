@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
      name='DeepBrainSeg',  
      version='0.1',
-     scripts=['DeepBrainSeg'] ,
+#     scripts=['DeepBrainSeg'] ,
      author="Avinash Kori",
      author_email="koriavinash1@gmail.com",
      description="Deep Learning tool for brain tumor segmentation.",
@@ -14,16 +14,16 @@ setuptools.setup(
      url="https://github.com/koriavinash1/DeepBrainSeg",
      packages=setuptools.find_packages(),
      install_requires = [
-         'requests',
-         'pytorch-gpu',
-         'torchvision'
+         'googledrivedownloader',
+         'torch',
+         'torchvision',
          'nibabel',
-         'SimpleITK'
+         'SimpleITK',
          'tqdm',
          'pandas',
          'scipy',
          'pydensecrf',
-         'skimage'
+         'scikit-image'
          ],
      classifiers=[
          "Programming Language :: Python :: 3",
