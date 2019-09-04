@@ -22,7 +22,7 @@ class deepSeg():
     def __init__(self, quick=False):
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # device = "cpu"
+        device = "cpu"
 
         map_location = device
 
@@ -37,8 +37,8 @@ class deepSeg():
         # air brain lesion segmentation..............
         from .modelABL import FCDenseNet103
 
-        ABLnclasses = 3
-        self.ABLnet = FCDenseNet103(n_classes = ABLnclasses) ## intialize the graph
+        self.ABLnclasses = 3
+        self.ABLnet = FCDenseNet103(n_classes = self.ABLnclasses) ## intialize the graph
         saved_parms=torch.load(ckpt_ABL, map_location=map_location) 
         self.ABLnet.load_state_dict(saved_parms['state_dict']) ## fill the model with trained params
         print ("=================================== ABLNET2D Loaded =================================")
@@ -48,20 +48,20 @@ class deepSeg():
         #========================================================================================
         # Tir2D net.......................
         from .modelTir2D import FCDenseNet57
-        Mnclasses = 4
-        self.mnet = FCDenseNet57(Mnclasses)
+        self.Mnclasses = 4
+        self.MNET2D = FCDenseNet57(self.Mnclasses)
         ckpt = torch.load(ckpt_tir2D, map_location=map_location)
-        self.mnet.load_state_dict(ckpt['state_dict'])
+        self.MNET2D.load_state_dict(ckpt['state_dict'])
         print ("=================================== MNET2D Loaded ===================================")
-        self.mnet.eval()
-        self.mnet = self.mnet.to(device)
+        self.MNET2D.eval()
+        self.MNET2D = self.MNET2D.to(device)
 
         #========================================================================================
 
         if not quick:
             # BrainNet3D model......................
             from .model3DBNET import BrainNet_3D_Inception
-            B3Dnclasses = 5
+            self.B3Dnclasses = 5
             self.BNET3Dnet = BrainNet_3D_Inception()
             ckpt = torch.load(ckpt_BNET3D, map_location=map_location)
             self.BNET3Dnet.load_state_dict(ckpt['state_dict'])
@@ -73,8 +73,8 @@ class deepSeg():
             # Tir3D model...................
             from .modelTir3D import FCDenseNet57
 
-            T3Dnclasses = 5
-            self.Tir3Dnet = FCDenseNet57(T3Dnclasses)
+            self.T3Dnclasses = 5
+            self.Tir3Dnet = FCDenseNet57(self.T3Dnclasses)
             ckpt = torch.load(ckpt_tir3D, map_location=map_location)
             self.Tir3Dnet.load_state_dict(ckpt['state_dict'])
             print ("================================== TIRNET2D Loaded =================================")
@@ -97,7 +97,7 @@ class deepSeg():
         t2_v    = normalize(t2_v,    brain_mask)
         flair_v = normalize(flair_v, brain_mask)
 
-        generated_output_logits = np.empty((ABLnclasses, flair_v.shape[0],flair_v.shape[1],flair_v.shape[2]))
+        generated_output_logits = np.empty((self.ABLnclasses, flair_v.shape[0],flair_v.shape[1],flair_v.shape[2]))
 
         for slices in tqdm(range(flair_v.shape[2])):
             flair_slice = np.transpose(flair_v[:,:,slices])
@@ -114,7 +114,7 @@ class deepSeg():
 
             transformed_array = torch.from_numpy(convert_image(array)).float()
             transformed_array = transformed_array.unsqueeze(0) ## neccessary if batch size == 1
-            transformed_array = transformed_array.to(device)
+            transformed_array = transformed_array.to(self.device)
             logits            = self.ABLnet(transformed_array).detach().cpu().numpy()# 3 x 240 x 240  
             
             generated_output_logits[:,:,:, slices] = logits
@@ -138,7 +138,7 @@ class deepSeg():
         flair = normalize(flair, brain_mask)
 
         shape = t1.shape # to exclude batch_size
-        final_prediction = np.zeros((T3Dnclasses, shape[0], shape[1], shape[2]))
+        final_prediction = np.zeros((self.T3Dnclasses, shape[0], shape[1], shape[2]))
         x_min, x_max, y_min, y_max, z_min, z_max = bbox(mask, pad = N)
         
         x_min, x_max, y_min, y_max, z_min, z_max = x_min, min(shape[0] - N, x_max), y_min, min(shape[1] - N, y_max), z_min, min(shape[2] - N, z_max)
@@ -153,7 +153,7 @@ class deepSeg():
                         high[0, 2, :, :, :] = t1[x:x+N, y:y+N, z:z+N]
                         high[0, 3, :, :, :] = t1ce[x:x+N, y:y+N, z:z+N]
 
-                        high = Variable(torch.from_numpy(high)).to(device).float()
+                        high = Variable(torch.from_numpy(high)).to(self.device).float()
                         pred = torch.nn.functional.softmax(self.Tir3Dnet(high).detach().cpu())
                         pred = pred.data.numpy()
 
@@ -238,8 +238,7 @@ class deepSeg():
                     
                     low1[0] = [resize(low[0, i, :, :, :], (resize_to, resize_to, resize_to)) for i in range(4)]
 
-                    high = Variable(torch.from_numpy(high)).to(device).float()
-                    low1  = Variable(torch.from_numpy(low1)).to(device).float()
+                    low1  = Variable(torch.from_numpy(low1)).to(self.device).float()
                     pred = torch.nn.functional.softmax(self.BNET3Dnet(high, low1, pred_size=prediction_size).detach().cpu()).numpy()
 
                     final_prediction[:, x:x+prediction_size, y:y+prediction_size, z:z+prediction_size] = pred[0]
@@ -258,7 +257,7 @@ class deepSeg():
         transformList.append(normalize)
         transformSequence=transforms.Compose(transformList)
 
-        generated_output = np.empty((Mnclasses,flair_volume.shape[0],flair_volume.shape[1],flair_volume.shape[2]))
+        generated_output = np.empty((self.Mnclasses,flair_volume.shape[0],flair_volume.shape[1],flair_volume.shape[2]))
         for slices in tqdm(range(flair_volume.shape[2])):
             flair_slice = scale_every_slice_between_0_to_255(np.transpose(flair_volume[:,:,slices]))
             t2_slice    = scale_every_slice_between_0_to_255(np.transpose(t2_volume[:,:,slices]))
@@ -271,7 +270,7 @@ class deepSeg():
             array = np.uint8(array)
             transformed_array = transformSequence(array)
             transformed_array =transformed_array.unsqueeze(0)
-            transformed_array = transformed_array.to(device)
+            transformed_array = transformed_array.to(self.device)
             outs = torch.nn.functional.softmax(self.MNET2D(transformed_array).detach().cpu()).numpy()
             outs = np.swapaxes(generated_output,1, 2)
 
@@ -283,16 +282,16 @@ class deepSeg():
         """
         brain_mask = get_brain_mask(t1)
 
-        mask  =  get_localization(t1, t1ce, t2, flair, brain_mask)
+        mask  =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
         mask  =  np.swapaxes(mask,1, 0)
            
         if not self.quick:
-            final_predictionTir3D_logits = inner_class_classification_with_logits_64Cube(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionBNET3D_logits = inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionMnet_logits  = inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_predictionTir3D_logits = self.inner_class_classification_with_logits_64Cube(t1, t1ce, t2, flair, brain_mask, mask)
+            final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
+            final_predictionMnet_logits  = self.inner_class_classification_with_logits_2D(t1, t2, flair)
             final_prediction_array  = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
-            final_predictionMnet_logits  = inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_predictionMnet_logits  = self.inner_class_classification_with_logits_2D(t1, t2, flair)
             final_prediction_array = np.array([final_predictionMnet_logits])
 
         final_prediction_logits = combine_logits_AM(final_prediction_array)
@@ -318,16 +317,16 @@ class deepSeg():
         brain_mask = get_brain_mask(t1)
         print ("[INFO: DeepBrainSeg] + (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") Working on: ", path)
         
-        mask  =  get_localization(t1, t1ce, t2, flair, brain_mask, ABLnet)
+        mask  =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
         mask  =  np.swapaxes(mask,1, 0)
 
         if not self.quick:
-            final_predictionTir3D_logits = inner_class_classification_with_logits_64Cube(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionBNET3D_logits = inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionMnet_logits  = inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_predictionTir3D_logits = self.inner_class_classification_with_logits_64Cube(t1, t1ce, t2, flair, brain_mask, mask)
+            final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
+            final_predictionMnet_logits  = self.inner_class_classification_with_logits_2D(t1, t2, flair)
             final_prediction_array  = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
-            final_predictionMnet_logits  = inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_predictionMnet_logits  = self.inner_class_classification_with_logits_2D(t1, t2, flair)
             final_prediction_array = np.array([final_predictionMnet_logits])
 
         final_prediction_logits = combine_logits_AM(final_prediction_array)
@@ -335,7 +334,9 @@ class deepSeg():
         final_pred              = combine_mask_prediction(mask, final_pred)
         final_pred              = perform_postprocessing(final_pred)
         final_pred              = adjust_classes(final_pred)
-        save_volume(final_pred, affine, root_path +'Prediction') 
+
+        if save:
+            save_volume(final_pred, affine, path +'Prediction') 
         return final_pred
 
 

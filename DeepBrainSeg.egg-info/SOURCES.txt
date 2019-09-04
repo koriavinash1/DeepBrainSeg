@@ -19,6 +19,8 @@ DeepBrainSeg/src/modelTir2D.py
 DeepBrainSeg/src/modelTir3D.py
 DeepBrainSeg/src/npanalysis.py
 DeepBrainSeg/ui/DeepBrainSeg.py
+DeepBrainSeg/ui/DeepBrainSeg1.py
+DeepBrainSeg/ui/DeepBrainSeg1_support.py
 DeepBrainSeg/ui/DeepBrainSeg_support.py
 DeepBrainSeg/ui/__init__.py
 DeepBrainSeg/ui/helpers.py

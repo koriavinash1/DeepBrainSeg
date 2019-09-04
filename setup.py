@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
      name='DeepBrainSeg',  
-     version='0.1.1',
+     version='0.1.2',
      author="Avinash Kori",
      author_email="koriavinash1@gmail.com",
      description="Deep Learning tool for brain tumor segmentation.",

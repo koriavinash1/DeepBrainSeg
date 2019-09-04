@@ -17,8 +17,9 @@ from .helper import *
 #========================================================================================
 # prediction functions.....................
 
-
 class deepSeg():
+    """
+    """
     def __init__(self, quick=False):
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -334,7 +335,9 @@ class deepSeg():
         final_pred              = combine_mask_prediction(mask, final_pred)
         final_pred              = perform_postprocessing(final_pred)
         final_pred              = adjust_classes(final_pred)
-        save_volume(final_pred, affine, root_path +'Prediction') 
+
+        if save:
+            save_volume(final_pred, affine, path +'Prediction') 
         return final_pred
 
 
