@@ -46,7 +46,7 @@ Description: # Ensemble-of-Deep-2D-and-3D-Fully-Convolutional-Neural-Network-for
         * Avinash Kori (avinashgkori@smail.iitm.ac.in or koriavinash1@gmail.com)
         
 Platform: UNKNOWN
-Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.5
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Description-Content-Type: text/markdown
