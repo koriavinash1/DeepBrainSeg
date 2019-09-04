@@ -25,7 +25,7 @@ setuptools.setup(
          'scikit-image'
          ],
      classifiers=[
-         "Programming Language :: Python :: 3.6",
+         "Programming Language :: Python :: 3.5",
          "License :: OSI Approved :: MIT License",
          "Operating System :: OS Independent",
      ],

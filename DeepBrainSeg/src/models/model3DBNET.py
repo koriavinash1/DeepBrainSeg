@@ -78,7 +78,6 @@ class BLOCK(nn.Module):
 
 
 
-
 class Residual_3D_Net(nn.Sequential):
     def __init__(self,in_channels= 4, convs=[30, 40, 40, 50]):
         super(Residual_3D_Net, self).__init__()
@@ -138,8 +137,6 @@ class _Layer_Inception(nn.Sequential):
 
     def forward(self, x):
         new_features = self.relu(self.norm(x))
-        # print ("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-        # print (self.kernel_3x3(new_features).size(), self.kernel_5x5(new_features).size(), self.kernel_7x7(new_features).size())
         new_features = torch.cat([self.kernel_3x3(new_features), self.kernel_5x5(new_features), self.kernel_7x7(new_features)], 1)
         if self.drop_rate > 0:
             new_features = F.dropout(new_features, p=self.drop_rate, training=self.training)
@@ -189,10 +186,10 @@ class BrainNet_3D_Inception(nn.Module):
         # print ('low_res_features',low_res_features.size())
         size = high_res_features.size()
 
-        #Upsample low_res_features
+        # Upsample low_res_features
         # print (low_res_features.size(), high_res_features.size())
-        low_res_upsample_features = F.upsample(low_res_features,(pred_size, pred_size, pred_size))
         # print ('low_res_upsample_features',low_res_upsample_features.size())
+        low_res_upsample_features = F.upsample(low_res_features,(pred_size, pred_size, pred_size))
         concat = torch.cat([high_res_features, low_res_upsample_features], 1)
         concat = self.features(concat)
         return concat

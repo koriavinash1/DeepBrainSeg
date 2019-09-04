@@ -17,12 +17,13 @@ from .helper import *
 #========================================================================================
 # prediction functions.....................
 
-
 class deepSeg():
+    """
+    """
     def __init__(self, quick=False):
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        device = "cpu"
+        # device = "cpu"
 
         map_location = device
 
@@ -35,7 +36,7 @@ class deepSeg():
 
         #========================================================================================
         # air brain lesion segmentation..............
-        from .modelABL import FCDenseNet103
+        from .models.modelABL import FCDenseNet103
 
         self.ABLnclasses = 3
         self.ABLnet = FCDenseNet103(n_classes = self.ABLnclasses) ## intialize the graph
@@ -47,7 +48,7 @@ class deepSeg():
 
         #========================================================================================
         # Tir2D net.......................
-        from .modelTir2D import FCDenseNet57
+        from .models.modelTir2D import FCDenseNet57
         self.Mnclasses = 4
         self.MNET2D = FCDenseNet57(self.Mnclasses)
         ckpt = torch.load(ckpt_tir2D, map_location=map_location)
@@ -60,7 +61,7 @@ class deepSeg():
 
         if not quick:
             # BrainNet3D model......................
-            from .model3DBNET import BrainNet_3D_Inception
+            from .models.model3DBNET import BrainNet_3D_Inception
             self.B3Dnclasses = 5
             self.BNET3Dnet = BrainNet_3D_Inception()
             ckpt = torch.load(ckpt_BNET3D, map_location=map_location)
@@ -71,7 +72,7 @@ class deepSeg():
 
             #========================================================================================
             # Tir3D model...................
-            from .modelTir3D import FCDenseNet57
+            from .models.modelTir3D import FCDenseNet57
 
             self.T3Dnclasses = 5
             self.Tir3Dnet = FCDenseNet57(self.T3Dnclasses)
@@ -178,7 +179,7 @@ class deepSeg():
         flair = normalize(flair, brain_mask)
 
         shape = t1.shape # to exclude batch_size
-        final_prediction = np.zeros((K3Dnclasses, shape[0], shape[1], shape[2]))
+        final_prediction = np.zeros((self.B3Dnclasses, shape[0], shape[1], shape[2]))
 
         x_min, x_max, y_min, y_max, z_min, z_max = bbox(mask, pad = prediction_size)
 
@@ -238,8 +239,10 @@ class deepSeg():
                     
                     low1[0] = [resize(low[0, i, :, :, :], (resize_to, resize_to, resize_to)) for i in range(4)]
 
+                    high = Variable(torch.from_numpy(high)).to(self.device).float()
                     low1  = Variable(torch.from_numpy(low1)).to(self.device).float()
-                    pred = torch.nn.functional.softmax(self.BNET3Dnet(high, low1, pred_size=prediction_size).detach().cpu()).numpy()
+                    pred  = torch.nn.functional.softmax(self.BNET3Dnet(high, low1, pred_size=prediction_size).detach().cpu())
+                    pred  = pred.numpy()
 
                     final_prediction[:, x:x+prediction_size, y:y+prediction_size, z:z+prediction_size] = pred[0]
 
@@ -269,7 +272,7 @@ class deepSeg():
             array[:,:,2] = t1ce_slice
             array = np.uint8(array)
             transformed_array = transformSequence(array)
-            transformed_array =transformed_array.unsqueeze(0)
+            transformed_array = transformed_array.unsqueeze(0)
             transformed_array = transformed_array.to(self.device)
             outs = torch.nn.functional.softmax(self.MNET2D(transformed_array).detach().cpu()).numpy()
             outs = np.swapaxes(generated_output,1, 2)
@@ -286,13 +289,13 @@ class deepSeg():
         mask  =  np.swapaxes(mask,1, 0)
            
         if not self.quick:
-            final_predictionTir3D_logits = self.inner_class_classification_with_logits_64Cube(t1, t1ce, t2, flair, brain_mask, mask)
+            final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
             final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionMnet_logits  = self.inner_class_classification_with_logits_2D(t1, t2, flair)
-            final_prediction_array  = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
+            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
             final_predictionMnet_logits  = self.inner_class_classification_with_logits_2D(t1, t2, flair)
-            final_prediction_array = np.array([final_predictionMnet_logits])
+            final_prediction_array       = np.array([final_predictionMnet_logits])
 
         final_prediction_logits = combine_logits_AM(final_prediction_array)
         final_pred              = postprocessing_pydensecrf(final_prediction_logits)
@@ -314,20 +317,19 @@ class deepSeg():
         t2    =  nib.load(os.path.join(path, name + 't2.nii.gz')).get_data()
         affine=  nib.load(os.path.join(path, name + 'flair.nii.gz')).affine
         
-        brain_mask = get_brain_mask(t1)
-        print ("[INFO: DeepBrainSeg] + (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") Working on: ", path)
+        print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") Working on: ", path)
         
-        mask  =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
-        mask  =  np.swapaxes(mask,1, 0)
-
         if not self.quick:
-            final_predictionTir3D_logits = self.inner_class_classification_with_logits_64Cube(t1, t1ce, t2, flair, brain_mask, mask)
+            brain_mask =  get_brain_mask(t1)
+            mask       =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
+            mask       =  np.swapaxes(mask,1, 0)
+            final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
             final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionMnet_logits  = self.inner_class_classification_with_logits_2D(t1, t2, flair)
-            final_prediction_array  = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
+            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
             final_predictionMnet_logits  = self.inner_class_classification_with_logits_2D(t1, t2, flair)
-            final_prediction_array = np.array([final_predictionMnet_logits])
+            final_prediction_array       = np.array([final_predictionMnet_logits])
 
         final_prediction_logits = combine_logits_AM(final_prediction_array)
         final_pred              = postprocessing_pydensecrf(final_prediction_logits)
@@ -336,7 +338,7 @@ class deepSeg():
         final_pred              = adjust_classes(final_pred)
 
         if save:
-            save_volume(final_pred, affine, path +'Prediction') 
+            save_volume(final_pred, affine, os.path.join(path, 'Prediction'))
         return final_pred
 
 
@@ -344,86 +346,5 @@ class deepSeg():
 # ========================================================================================
 
 if __name__ == '__main__':
-    submit = True
-
-
-    if not submit:
-        # Predictions..............
-        names     =  os.listdir('./data')
-
-        for name in names:
-            root_path = './data/'+name+'/'
-            path = root_path + name +'_'
-
-            seg   =  np.uint8(nib.load(path+'seg.nii.gz').get_data())
-
-            flair =  nib.load(path + 'flair.nii.gz').get_data()
-            t1    =  nib.load(path + 't1.nii.gz').get_data()
-            t1ce  =  nib.load(path + 't1ce.nii.gz').get_data()
-            t2    =  nib.load(path + 't2.nii.gz').get_data()
-            affine=  nib.load(path + 'flair.nii.gz').affine
-            
-            try:
-                brain_mask = np.uint8(nib.load(root_path + 'mask.nii.gz').get_data())
-            except:
-                generate_mask()
-                brain_mask = np.uint8(nib.load(root_path + 'mask.nii.gz').get_data())
-            print ("Working on: ", path)
-     
-            mask  =  get_localization(t1, t1ce, t2, flair, brain_mask, ABLnet)
-            mask  =  np.swapaxes(mask,1, 0)
-           
-            final_predictionTir3D_logits = inner_class_classification_with_logits_64Cube(t1, t1ce, t2, flair, brain_mask, mask, Tir3Dnet)
-            final_predictionBNET3D_logits = inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask, BNET3Dnet)
-            final_predictionMnet_logits  = inner_class_classification_with_logits_2D(t1, t2, flair, mnet)
-
-
-            final_prediction_array  = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
-            final_prediction_logits = combine_logits_AM(final_prediction_array)
-            final_pred              = postprocessing_pydensecrf(final_prediction_logits)
-            final_pred              = combine_mask_prediction(mask, final_pred)
-            final_pred              = perform_postprocessing(final_pred)
-            final_pred              = adjust_classes(final_pred)
-            wt, tc, et              = get_dice_score(final_pred, seg)
-            print ('Whole Tumour DiceScore = '+ str(wt) +'; Tumour Core DiceScore = '+ str(tc) +'; Enhancing Tumour DiceScore = '+str(et))
-            save_volume(final_pred, affine, root_path +'Prediction') 
-
-    else :
-        names     =  os.listdir('./data/Test')
-        root_save = './data/Results/'
-        os.makedirs(root_save, exist_ok=True)
-
-        for name in names:
-            root_path = './data/Test/'+name+'/'
-            path = root_path + name + '_'
-
-            flair =  nib.load(path + 'flair.nii.gz').get_data()
-            t1    =  nib.load(path + 't1.nii.gz').get_data()
-            t1ce  =  nib.load(path + 't1ce.nii.gz').get_data()
-            t2    =  nib.load(path + 't2.nii.gz').get_data()
-            affine=  nib.load(path + 'flair.nii.gz').affine
-
-            try:
-                brain_mask = np.uint8(nib.load(root_path + 'mask.nii.gz').get_data())
-            except:
-                generate_mask()
-                brain_mask = np.uint8(nib.load(root_path + 'mask.nii.gz').get_data())
-
-            print ("Working on: ", path)
-
-            mask  =  get_localization(t1, t1ce, t2, flair, brain_mask, ABLnet)
-            mask  =  np.swapaxes(mask,1, 0)
-
-
-            final_predictionTir3D_logits = inner_class_classification_with_logits_64Cube(t1, t1ce, t2, flair, brain_mask, mask, Tir3Dnet)
-            final_predictionKam3D_logits = inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask, Kam3Dnet)
-            final_predictionMnet_logits  = inner_class_classification_with_logits_2D(t1, t2, flair, mnet)
-
-            final_prediction_array  = np.array([final_predictionTir3D_logits, final_predictionKam3D_logits, final_predictionMnet_logits])
-            final_prediction_logits = combine_logits_AM(final_prediction_array)
-
-            final_pred              = postprocessing_pydensecrf(final_prediction_logits)
-            final_pred              = combine_mask_prediction(mask, final_pred)
-            final_pred              = perform_postprocessing(final_pred)
-            final_pred              = adjust_classes(final_pred)
-            save_volume(final_pred, affine, root_save + name)   
+    ext = deepSeg(True)
+    ext.get_segmentation_brats('../../sample_volume/Brats18_CBICA_AVG_1/')

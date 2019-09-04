@@ -23,7 +23,7 @@ class deepSeg():
     def __init__(self, quick=False):
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        device = "cpu"
+        # device = "cpu"
 
         map_location = device
 
@@ -179,7 +179,7 @@ class deepSeg():
         flair = normalize(flair, brain_mask)
 
         shape = t1.shape # to exclude batch_size
-        final_prediction = np.zeros((K3Dnclasses, shape[0], shape[1], shape[2]))
+        final_prediction = np.zeros((self.B3Dnclasses, shape[0], shape[1], shape[2]))
 
         x_min, x_max, y_min, y_max, z_min, z_max = bbox(mask, pad = prediction_size)
 
@@ -239,8 +239,10 @@ class deepSeg():
                     
                     low1[0] = [resize(low[0, i, :, :, :], (resize_to, resize_to, resize_to)) for i in range(4)]
 
+                    high = Variable(torch.from_numpy(high)).to(self.device).float()
                     low1  = Variable(torch.from_numpy(low1)).to(self.device).float()
-                    pred = torch.nn.functional.softmax(self.BNET3Dnet(high, low1, pred_size=prediction_size).detach().cpu()).numpy()
+                    pred  = torch.nn.functional.softmax(self.BNET3Dnet(high, low1, pred_size=prediction_size).detach().cpu())
+                    pred  = pred.numpy()
 
                     final_prediction[:, x:x+prediction_size, y:y+prediction_size, z:z+prediction_size] = pred[0]
 
@@ -270,7 +272,7 @@ class deepSeg():
             array[:,:,2] = t1ce_slice
             array = np.uint8(array)
             transformed_array = transformSequence(array)
-            transformed_array =transformed_array.unsqueeze(0)
+            transformed_array = transformed_array.unsqueeze(0)
             transformed_array = transformed_array.to(self.device)
             outs = torch.nn.functional.softmax(self.MNET2D(transformed_array).detach().cpu()).numpy()
             outs = np.swapaxes(generated_output,1, 2)
@@ -315,10 +317,10 @@ class deepSeg():
         t2    =  nib.load(os.path.join(path, name + 't2.nii.gz')).get_data()
         affine=  nib.load(os.path.join(path, name + 'flair.nii.gz')).affine
         
-        print ("[INFO: DeepBrainSeg] + (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") Working on: ", path)
+        print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") Working on: ", path)
         
         if not self.quick:
-            brain_mask = get_brain_mask(t1)
+            brain_mask =  get_brain_mask(t1)
             mask       =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
             mask       =  np.swapaxes(mask,1, 0)
             final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
