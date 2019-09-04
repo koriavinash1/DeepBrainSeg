@@ -1,8 +1,10 @@
-requests
-pytorch-gpu
-torchvisionnibabel
-SimpleITKtqdm
+googledrivedownloader
+torch
+torchvision
+nibabel
+SimpleITK
+tqdm
 pandas
 scipy
 pydensecrf
-skimage
+scikit-image

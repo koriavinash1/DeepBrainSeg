@@ -1,4 +1,3 @@
-DeepBrainSeg
 README.md
 setup.py
 DeepBrainSeg/__init__.py
@@ -9,6 +8,7 @@ DeepBrainSeg.egg-info/requires.txt
 DeepBrainSeg.egg-info/top_level.txt
 DeepBrainSeg/src/Tester.py
 DeepBrainSeg/src/__init__.py
+DeepBrainSeg/src/helper.py
 DeepBrainSeg/src/helper_mask.py
 DeepBrainSeg/src/layers2DABL.py
 DeepBrainSeg/src/layersTir2D.py
@@ -19,6 +19,8 @@ DeepBrainSeg/src/modelTir2D.py
 DeepBrainSeg/src/modelTir3D.py
 DeepBrainSeg/src/npanalysis.py
 DeepBrainSeg/ui/DeepBrainSeg.py
+DeepBrainSeg/ui/DeepBrainSeg1.py
+DeepBrainSeg/ui/DeepBrainSeg1_support.py
 DeepBrainSeg/ui/DeepBrainSeg_support.py
 DeepBrainSeg/ui/__init__.py
 DeepBrainSeg/ui/helpers.py
