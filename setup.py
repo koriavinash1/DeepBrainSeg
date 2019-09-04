@@ -4,8 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 setuptools.setup(
      name='DeepBrainSeg',  
-     version='0.1',
-#     scripts=['DeepBrainSeg'] ,
+     version='0.1.1',
      author="Avinash Kori",
      author_email="koriavinash1@gmail.com",
      description="Deep Learning tool for brain tumor segmentation.",
@@ -26,7 +25,7 @@ setuptools.setup(
          'scikit-image'
          ],
      classifiers=[
-         "Programming Language :: Python :: 3",
+         "Programming Language :: Python :: 3.6",
          "License :: OSI Approved :: MIT License",
          "Operating System :: OS Independent",
      ],

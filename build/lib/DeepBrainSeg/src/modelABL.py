@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from layers2DABL import *
+from .layers2DABL import *
 
 
 class FCDenseNet(nn.Module):

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from layersTir3D import *
+from .layersTir3D import *
 
 
 class FCDenseNet(nn.Module):

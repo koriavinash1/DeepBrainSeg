@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from layersTir2D import *
+from .layersTir2D import *
 from torch.autograd import Variable
 
 def weights_init(m):

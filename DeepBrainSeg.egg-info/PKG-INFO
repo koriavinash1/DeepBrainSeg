@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: DeepBrainSeg
-Version: 0.1
+Version: 0.1.1
 Summary: Deep Learning tool for brain tumor segmentation.
 Home-page: https://github.com/koriavinash1/DeepBrainSeg
 Author: Avinash Kori
@@ -46,7 +46,7 @@ Description: # Ensemble-of-Deep-2D-and-3D-Fully-Convolutional-Neural-Network-for
         * Avinash Kori (avinashgkori@smail.iitm.ac.in or koriavinash1@gmail.com)
         
 Platform: UNKNOWN
-Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Description-Content-Type: text/markdown
