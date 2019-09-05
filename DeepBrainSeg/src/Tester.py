@@ -19,10 +19,31 @@ from .helper import *
 
 class deepSeg():
     """
+        class performs segmentation for a given sequence of patient data.
+        to main platform for segmentation mask estimation
+            one for the patient data in brats format
+            other with any random format
+        step followed for in estimation of segmentation mask
+            1. ABLnet for reducing false positives outside the brain
+                Air Brain Lesson model (2D model, 103 layered)
+            2. BNet3Dnet 3D network for inner class classification
+                Dual Path way network
+            3. MNet2D 57 layered convolutional network for inner class
+                classification
+            4. Tir3Dnet 57 layered 3D convolutional network for inner class 
+                classification
+        more on training details and network information:
+        (https://link.springer.com/chapter/10.1007/978-3-030-11726-9_43<Paste>)
+	
+	=========================
+	
+	quick: True (just evaluates on Dual path network (BNet3D)
+		else copmutes an ensumble over all four networks	
     """
     def __init__(self, 
                     quick = False,
                     ants_path = '/tmp/DeepBrainSeg/ants/bin/ants/bin/'):
+
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # device = "cpu"
@@ -96,6 +117,11 @@ class deepSeg():
 
     def get_ants_mask(self, t1_path):
         """
+		We make use of ants framework for generalized skull stripping
+		
+		t1_path: t1 volume path (str)
+		saves the mask in the same location as t1 data directory
+		returns: maskvolume (numpy uint8 type) 
         """
         mask_path = os.path.join(os.path.dirname(t1_path), 'mask.nii.gz')
         os.system(self.ants_path +'ImageMath 3 '+ mask_path +' Normalize '+ t1_path)
@@ -109,6 +135,13 @@ class deepSeg():
 
     def get_localization(self, t1_v, t1c_v, t2_v, flair_v, brain_mask):
         """
+		ABLnetwork output, finds the brain, Whole tumor region
+
+		t1_v       = t1 volume (numpy array)
+		t1c_v      = t1c volume (numpy array)
+		t2_v       = t2 volume (numpy array)
+		flair_v    = flair volume (numpy array)
+		brain_mask = brain, whole tumor mask (numpy array, output of ANTs pieline)
         """
 
         t1_v    = normalize(t1_v,    brain_mask)
@@ -149,6 +182,10 @@ class deepSeg():
                                                         t1ce, t2, flair, 
                                                         brain_mask, mask, N = 64):
         """
+		output of 3D tiramisu model (tir3Dnet)
+
+		mask = numpy array output of ABLnet 
+		N = patch size during inference
         """
 
         t1    = normalize(t1, brain_mask)
@@ -189,6 +226,9 @@ class deepSeg():
                                                             prediction_size = 9):
 
         """
+		output of BNet3D 
+
+		prediction_size = mid inference patch size 
         """
 
         t1    = normalize(t1, brain_mask)
@@ -274,6 +314,9 @@ class deepSeg():
                                                     t2_volume, 
                                                     flair_volume):
         """
+		output of 2D tiramisu model (MNet)
+		
+		
         """
         normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         transformList = []
@@ -306,8 +349,14 @@ class deepSeg():
                         t2_path, 
                         t1ce_path, 
                         flair_path, 
-                        save = True):
+                        save_path = None):
         """
+		Generates segmentation for the data not in brats format
+		
+		if save_path provided function saves the prediction with 
+			DeepBrainSeg_Prediction.nii.qz name in the provided 
+			directory 
+		returns: segmentation mask
         """
         t1 = nib.load(t1_path).get_data()
         t2 = nib.load(t2_path).get_data()
@@ -335,7 +384,7 @@ class deepSeg():
         final_pred              = adjust_classes(final_pred)
 
         if save:
-            save_volume(final_pred, affine, os.path.join(path, 'DeepBrainSeg_Prediction'))
+            save_volume(final_pred, affine, os.path.join(save_path, 'DeepBrainSeg_Prediction'))
 
         return final_pred
 
@@ -344,6 +393,12 @@ class deepSeg():
                                 path, 
                                 save = True):
         """
+		Generates segmentation for the data in BraTs format
+
+		if save True saves the prediction in the save directory 
+			in the patients data path
+		
+		returns : segmentation mask
         """
 
         name  = path.split("/")[-1] + "_"
