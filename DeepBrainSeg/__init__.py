@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 __license__ = 'MIT'
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 __maintainer__ = ['Avinash Kori']
 __email__ = ['koriavinash1@gmail.com']
 

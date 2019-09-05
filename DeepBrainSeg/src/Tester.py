@@ -362,6 +362,7 @@ class deepSeg():
         t2 = nib.load(t2_path).get_data()
         t1ce = nib.load(t1ce_path).get_data()
         flair = nib.load(flair_path).get_data()
+	affine = nib.load(flair_path).affine
 
         brain_mask = self.get_ants_mask(t2_path)
 
@@ -374,8 +375,8 @@ class deepSeg():
             final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
             final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
-            final_predictionMnet_logits  = self.inner_class_classification_with_logits_2D(t1, t2, flair)
-            final_prediction_array       = np.array([final_predictionMnet_logits])
+            final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
+            final_prediction_array       = np.array([final_predictionBNET3D_logits])
 
         final_prediction_logits = combine_logits_AM(final_prediction_array)
         final_pred              = postprocessing_pydensecrf(final_prediction_logits)

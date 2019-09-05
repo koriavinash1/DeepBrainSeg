@@ -11,8 +11,7 @@ import PIL
 from tkinter import filedialog
 import PIL.Image, PIL.ImageTk
 
-sys.path.append("../src/")
-from Tester import get_brainsegmentation
+
 try:
     import Tkinter as tk
 except ImportError:
@@ -26,34 +25,37 @@ except ImportError:
     py3 = True
 
 import numpy as np
-import DeepBrainSeg_support
+import DeepBrainSegUI_support
 from helpers import *
 
+from DeepBrainSeg import deepSeg
+get_brainsegmentation = deepSeg(quick=True)
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
     global val, w, root
     root = tk.Tk()
-    DeepBrainSeg_support.set_Tk_var()
-    top = Toplevel1 (root)
-    DeepBrainSeg_support.init(root, top)
+    DeepBrainSegUI_support.set_Tk_var()
+    top = DeepBrainSegUI (root)
+    DeepBrainSegUI_support.init(root, top)
     root.mainloop()
 
 w = None
-def create_Toplevel1(root, *args, **kwargs):
+def create_DeepBrainSegUI(root, *args, **kwargs):
     '''Starting point when module is imported by another program.'''
     global w, w_win, rt
     rt = root
     w = tk.Toplevel (root)
-    DeepBrainSeg_support.set_Tk_var()
-    top = Toplevel1 (w)
-    DeepBrainSeg_support.init(w, top, *args, **kwargs)
+    DeepBrainSegUI_support.set_Tk_var()
+    top = DeepBrainSegUI (w)
+    DeepBrainSegUI_support.init(w, top, *args, **kwargs)
     return (w, top)
 
-def destroy_Toplevel1():
+def destroy_DeepBrainSegUI():
     global w
     w.destroy()
     w = None
+
 
 
 def plot_normalize(img):
@@ -63,7 +65,7 @@ def plot_normalize(img):
     print (img_.min(), img_.max())
     return img_
 
-class Toplevel1:
+class DeepBrainSegUI:
     def __init__(self, top=None):
         '''This class configures and populates the toplevel window.
            top is the toplevel containing window.'''
@@ -441,8 +443,8 @@ class Toplevel1:
     def Load_T2(self, event=None):
         """
         """
-        filename = filedialog.askopenfilename()
-        nib_vol = nib.load(filename)
+        self.T2filename = filedialog.askopenfilename()
+        nib_vol = nib.load(self.T2filename)
         self.affine = nib_vol.affine
         self.T2_vol = nib_vol.get_data()
 
@@ -459,8 +461,8 @@ class Toplevel1:
 
 
     def Load_T1(self, event=None):
-        filename = filedialog.askopenfilename()
-        nib_vol = nib.load(filename)
+        self.T1filename = filedialog.askopenfilename()
+        nib_vol = nib.load(self.T1filename)
         self.affine = nib_vol.affine
         self.T1_vol = nib_vol.get_data()
 
@@ -478,8 +480,8 @@ class Toplevel1:
 
 
     def Load_Flair(self, event=None):
-        filename = filedialog.askopenfilename()
-        nib_vol = nib.load(filename)
+        self.Flairfilename = filedialog.askopenfilename()
+        nib_vol = nib.load(self.Flairfilename)
         self.affine = nib_vol.affine
         self.Flair_vol = nib_vol.get_data()
 
@@ -497,8 +499,8 @@ class Toplevel1:
 
 
     def Load_T1ce(self, event=None):
-        filename = filedialog.askopenfilename()
-        nib_vol = nib.load(filename)
+        self.T1cefilename = filedialog.askopenfilename()
+        nib_vol = nib.load(self.T1cefilename)
         self.affine = nib_vol.affine
         self.T1ce_vol = nib_vol.get_data()
 
@@ -524,7 +526,10 @@ class Toplevel1:
         except:
             ValueError 
 
-        self.prediction = get_brainsegmentation(self.T1_vol, self.T2_vol, self.T1ce_vol, self.Flair_vol)
+        self.prediction = get_brainsegmentation.get_segmentation(self.T1filename, 
+                                                                self.T2filename, 
+                                                                self.T1cefilename, 
+                                                                self.Flairfilename)
 
         mid_slice = self.prediction.shape[2]//2
 

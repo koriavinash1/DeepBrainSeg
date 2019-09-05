@@ -1,5 +1,8 @@
 *BestModels*
 *.pyc*
+*build*
+*egg-info*
+*dist*
 *__pycache__*
 *trained_models*
 *results*
