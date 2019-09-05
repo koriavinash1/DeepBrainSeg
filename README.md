@@ -17,6 +17,13 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 
 ### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
 
+
+#### python version: 3.5
+#### installation 
+```pip install DeepBrainSeg```
+
+<hline>
+
 ### Basic usage
 
 >> for data in BraTs format
@@ -25,6 +32,8 @@ from DeepBrainSeg import deepSeg
 segmentor = deepSeg(quick=True)
 segmentor.get_segmentation_brats(path)
 ```
+
+<hline>
 
 >> for other formats
 ```
@@ -38,6 +47,7 @@ segmentor = deepSeg(quick=True)
 segmentor.get_segmentation(t1_path, t2_path, t1ce_path, flair_path, save = True)
 ```
 
+<hline>
 
 # Steps followed for inference:
 
