@@ -19,14 +19,13 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 
 
 #### python version: 3.5
-#### installation 
-```pip install DeepBrainSeg```
+#### installation: ```pip install DeepBrainSeg```
 
 <hline>
 
 ### Basic usage
 
->> for data in BraTs format
+> for data in BraTs format
 ```
 from DeepBrainSeg import deepSeg
 segmentor = deepSeg(quick=True)
@@ -35,7 +34,7 @@ segmentor.get_segmentation_brats(path)
 
 <hline>
 
->> for other formats
+> for other formats
 ```
 from DeepBrainSeg import deepSeg
 t1_path = 
