@@ -1,19 +1,20 @@
-from deepbrain import Extractor
 from scipy.ndimage import uniform_filter, maximum_filter
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import unary_from_softmax, create_pairwise_bilateral, create_pairwise_gaussian
 import SimpleITK as sitk
 import numpy as np
 import nibabel as nib
+import tensorflow as tf
 
 from scipy.ndimage.measurements import label
 from skimage.morphology import erosion, dilation
 
 #=======================================================================================
 # init. brain mask extractor
-ext = Extractor()
 def get_brain_mask(t1):
-    probs = ext.run(t1)
+    from deepbrain import Extractor
+    with Extractor() as ext:
+        probs = ext.run(t1)
     return probs > 0.5
 
 # Helper Functions.....................

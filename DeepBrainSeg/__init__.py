@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 __license__ = 'MIT'
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 __maintainer__ = ['Avinash Kori']
 __email__ = ['koriavinash1@gmail.com']
 
@@ -11,6 +11,7 @@ __email__ = ['koriavinash1@gmail.com']
 from .src.Tester import deepSeg
 from .src.helper import *
 import os
+import sys
 from time import gmtime, strftime
 from google_drive_downloader import GoogleDriveDownloader as gdd
 
@@ -34,3 +35,32 @@ if (not os.path.exists(model_path)) or (os.listdir(model_path) == []):
                                     dest_path=os.path.join(model_path, 'ABL_CE_best_model_loss_based.pth.tar'))
 else :
 	print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Skipping Download Files already exists')
+
+
+print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Ants Installation')
+
+ants_path = '/tmp/DeepBrainSeg/ants'
+current_path = os.getcwd()
+if (not os.path.exists(ants_path)) or (os.listdir(ants_path) == []):
+	os.makedirs(os.path.join(ants_path, 'code')) 
+	os.chdir(os.path.join(ants_path, 'code'))
+	os.system('git clone https://github.com/stnava/ANTs.git')
+	os.makedirs(os.path.join(ants_path, 'bin/ants'))
+	os.chdir(os.path.join(ants_path, 'bin/ants'))
+	try:
+		print (os.getcwd())
+		os.system('cmake '+os.path.join(ants_path, 'code/ANTs'))
+		os.system('make -j 2')
+	except:
+		print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Cmake Latest version installation')
+		os.system('wget https://github.com/Kitware/CMake/releases/download/v3.15.3/cmake-3.15.3.tar.gz')
+		os.system('tar xvzf cmake-3.15.3.tar.gz')
+		os.chdir('cmake-3.15.3')
+		os.system('./bootstrap')
+		os.system('make')
+		os.system('sudo make install')
+
+		os.system('cmake '+os.path.join(ants_path, 'code/ANTs'))
+		os.system('make -j 2')
+
+os.chdir(current_path)
