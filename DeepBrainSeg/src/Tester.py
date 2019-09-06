@@ -12,11 +12,12 @@ import pdb
 import os
 
 from .helper import *
-
+from os.path import expanduser
+home = expanduser("~")
 
 #========================================================================================
 # prediction functions.....................
-
+bin_path = os.path.join(home, '.DeepBrainSeg/ants/bin/ants/bin/')
 class deepSeg():
     """
         class performs segmentation for a given sequence of patient data.
@@ -42,7 +43,7 @@ class deepSeg():
     """
     def __init__(self, 
                     quick = False,
-                    ants_path = '/tmp/DeepBrainSeg/ants/bin/ants/bin/'):
+                    ants_path = bin_path):
 
 
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -51,10 +52,10 @@ class deepSeg():
         map_location = device
         #========================================================================================
 
-        ckpt_tir2D    = '/tmp/DeepBrainSeg/BestModels/Tramisu_2D_FC57_best_loss.pth.tar'
-        ckpt_tir3D    = '/tmp/DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar'
-        ckpt_BNET3D   = '/tmp/DeepBrainSeg/BestModels/BrainNet_3D_best_acc.pth.tar'
-        ckpt_ABL      = '/tmp/DeepBrainSeg/BestModels/ABL_CE_best_model_loss_based.pth.tar'
+        ckpt_tir2D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_2D_FC57_best_loss.pth.tar')
+        ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
+        ckpt_BNET3D   = os.path.join(home, '.DeepBrainSeg/BestModels/BrainNet_3D_best_acc.pth.tar')
+        ckpt_ABL      = os.path.join(home, '.DeepBrainSeg/BestModels/ABL_CE_best_model_loss_based.pth.tar')
 
         #========================================================================================
         # air brain lesion segmentation..............
@@ -70,30 +71,29 @@ class deepSeg():
 
         #========================================================================================
 
-        # BrainNet3D model......................
-        from .models.model3DBNET import BrainNet_3D_Inception
-        self.B3Dnclasses = 5
-        self.BNET3Dnet = BrainNet_3D_Inception()
-        ckpt = torch.load(ckpt_BNET3D, map_location=map_location)
-        self.BNET3Dnet.load_state_dict(ckpt['state_dict'])
-        print ("=================================== KAMNET3D Loaded =================================")
-        self.BNET3Dnet.eval()
-        self.BNET3Dnet = self.BNET3Dnet.to(device)
-
+        # Tir2D net.......................
+        from .models.modelTir2D import FCDenseNet57
+        self.Mnclasses = 4
+        self.MNET2D = FCDenseNet57(self.Mnclasses)
+        ckpt = torch.load(ckpt_tir2D, map_location=map_location)
+        self.MNET2D.load_state_dict(ckpt['state_dict'])
+        print ("=================================== MNET2D Loaded ===================================")
+        self.MNET2D.eval()
+        self.MNET2D = self.MNET2D.to(device)
 
         #========================================================================================
 
         if not quick:
             
-            # Tir2D net.......................
-            from .models.modelTir2D import FCDenseNet57
-            self.Mnclasses = 4
-            self.MNET2D = FCDenseNet57(self.Mnclasses)
-            ckpt = torch.load(ckpt_tir2D, map_location=map_location)
-            self.MNET2D.load_state_dict(ckpt['state_dict'])
-            print ("=================================== MNET2D Loaded ===================================")
-            self.MNET2D.eval()
-            self.MNET2D = self.MNET2D.to(device)
+            # BrainNet3D model......................
+            from .models.model3DBNET import BrainNet_3D_Inception
+            self.B3Dnclasses = 5
+            self.BNET3Dnet = BrainNet_3D_Inception()
+            ckpt = torch.load(ckpt_BNET3D, map_location=map_location)
+            self.BNET3Dnet.load_state_dict(ckpt['state_dict'])
+            print ("=================================== KAMNET3D Loaded =================================")
+            self.BNET3Dnet.eval()
+            self.BNET3Dnet = self.BNET3Dnet.to(device)
 
             #========================================================================================
             # Tir3D model...................
@@ -362,7 +362,7 @@ class deepSeg():
         t2 = nib.load(t2_path).get_data()
         t1ce = nib.load(t1ce_path).get_data()
         flair = nib.load(flair_path).get_data()
-	affine = nib.load(flair_path).affine
+        affine = nib.load(flair_path).affine
 
         brain_mask = self.get_ants_mask(t2_path)
 
@@ -375,8 +375,8 @@ class deepSeg():
             final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
             final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
-            final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            final_prediction_array       = np.array([final_predictionBNET3D_logits])
+            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_prediction_array       = np.array([final_predictionMnet_logits])
 
         final_prediction_logits = combine_logits_AM(final_prediction_array)
         final_pred              = postprocessing_pydensecrf(final_prediction_logits)
@@ -384,7 +384,7 @@ class deepSeg():
         final_pred              = perform_postprocessing(final_pred)
         final_pred              = adjust_classes(final_pred)
 
-        if save:
+        if save_path:
             save_volume(final_pred, affine, os.path.join(save_path, 'DeepBrainSeg_Prediction'))
 
         return final_pred
@@ -422,8 +422,8 @@ class deepSeg():
             final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
             final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
-            final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            final_prediction_array       = np.array([final_predictionBNET3D_logits])
+            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_prediction_array       = np.array([final_predictionMnet_logits])
 
         final_prediction_logits = combine_logits_AM(final_prediction_array)
         final_pred              = postprocessing_pydensecrf(final_prediction_logits)

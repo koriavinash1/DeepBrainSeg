@@ -3,7 +3,6 @@ from __future__ import division
 from __future__ import print_function
 
 __license__ = 'MIT'
-__version__ = '0.1.4'
 __maintainer__ = ['Avinash Kori']
 __email__ = ['koriavinash1@gmail.com']
 
@@ -14,8 +13,10 @@ import os
 import sys
 from time import gmtime, strftime
 from google_drive_downloader import GoogleDriveDownloader as gdd
+from os.path import expanduser
+home = expanduser("~")
 
-model_path = '/tmp/DeepBrainSeg/BestModels'
+model_path = os.path.join(home, '.DeepBrainSeg/BestModels')
 if (not os.path.exists(model_path)) or (os.listdir(model_path) == []):
 	os.makedirs(model_path)
 	print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Tramisu_3D_FC57_best_acc.pth.tar')
@@ -39,7 +40,7 @@ else :
 
 print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Ants Installation')
 
-ants_path = '/tmp/DeepBrainSeg/ants'
+ants_path = os.path.join(home, '.DeepBrainSeg/ants')
 current_path = os.getcwd()
 if (not os.path.exists(ants_path)) or (os.listdir(ants_path) == []):
 	os.makedirs(os.path.join(ants_path, 'code')) 

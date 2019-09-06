@@ -28,7 +28,9 @@ import numpy as np
 import DeepBrainSegUI_support
 from helpers import *
 
-from ..DeepBrainSeg import deepSeg
+import matplotlib.pyplot as plt
+
+from DeepBrainSeg import deepSeg
 get_brainsegmentation = deepSeg(quick=True)
 
 def vp_start_gui():
@@ -59,15 +61,15 @@ def destroy_DeepBrainSegUI():
 
 
 def plot_normalize(img):
-    print (img.min(), img.max())
     img_ = 255.*((img - img.min())/(img.max() - img.min()))
     img_ = img_.astype("uint8")
-    print (img_.min(), img_.max())
-    return_img = np.zeros((img_.shape[0], img_.shape[1], 3))
-    return_img[:,:, 0] = img_
-    return_img[:,:, 1] = img_
-    return_img[:,:, 2] = img_
-    print (return_img.shape)
+    return img_
+
+def create_img(img):
+    return_img = np.zeros((img.shape[0], img.shape[1], 3))
+    return_img[:,:, 0] = img
+    return_img[:,:, 1] = img
+    return_img[:,:, 2] = img
     return np.uint8(return_img)
 
 
@@ -80,6 +82,7 @@ def create_mask(pred):
     x, y = np.where(pred == 3)
     return_img[x, y, :] = [0, 0, 255]
     return np.uint8(return_img)
+
 
 class DeepBrainSegUI:
     def __init__(self, top=None):
@@ -390,7 +393,7 @@ class DeepBrainSegUI:
         self.CorronalCanvas.create_image(0, 0, image=self.CorronalCanvas_image, anchor=tk.NW)
         
 
-    def update_main_view_overlay(self, vol, prediction, slice1, slice2, slice3, alpha_=0.3):
+    def update_main_view_overlay(self, vol, prediction, slice1, slice2, slice3, alpha_=0.7):
         """
         """
         print ("=============================")
@@ -404,12 +407,13 @@ class DeepBrainSegUI:
         size = (self.AxialCanvas.winfo_width(), self.AxialCanvas.winfo_height())
         size = (size[0], int(true_size[0]/true_size[1])*size[1]) if size[0] < size[1] else (int(true_size[1]/true_size[0])*size[0], size[1])
         
-        img = (1 - alpha)*plot_normalize(vol[:,:,slice3].T) + alpha*create_mask(pred)
+        img = plot_normalize((1 - alpha)*create_img(vol[:,:,slice3].T) + alpha*create_mask(pred))
         self.AxialCanvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(img)).resize(size))
         self.AxialCanvas.create_image(0, 0, image=self.AxialCanvas_image, anchor=tk.NW)
 
-	
 
+        plt.imshow(img)
+        plt.show()
 
         pred = np.flipud(prediction[:,slice2, :].T)
         alpha = np.zeros_like(pred)
@@ -420,11 +424,10 @@ class DeepBrainSegUI:
         size = (self.AxialCanvas.winfo_width(), self.AxialCanvas.winfo_height())
         size = (size[0], int(true_size[0]/true_size[1])*size[1]) if size[0] < size[1] else (int(true_size[1]/true_size[0])*size[0], size[1])
     
-        img = (1 - alpha)*plot_normalize(np.flipud(vol[:,slice2,:].T)) + alpha*create_mask(pred)
+        img = plot_normalize((1 - alpha)*create_img(np.flipud(vol[:,slice2,:].T)) + alpha*create_mask(pred))
         self.SagitalCanvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(img)).resize(size))
         self.SagitalCanvas.create_image(0, 0, image=self.SagitalCanvas_image, anchor=tk.NW)
 
-	
 
 
         pred = np.flipud(prediction[slice1,:,:].T)
@@ -437,7 +440,7 @@ class DeepBrainSegUI:
         size = (size[0], int(true_size[0]/true_size[1])*size[1]) if size[0] < size[1] else (int(true_size[1]/true_size[0])*size[0], size[1])
     
 
-        img = (1 - alpha)*plot_normalize(np.flipud(vol[slice1, :, :].T)) + alpha*create_mask(pred)
+        img = plot_normalize((1 - alpha)*create_img(np.flipud(vol[slice1, :, :].T)) + alpha*create_mask(pred))
         self.CorronalCanvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(np.uint8(img)).resize(size))
         self.CorronalCanvas.create_image(0, 0, image=self.CorronalCanvas_image, anchor=tk.NW)
 
@@ -488,6 +491,7 @@ class DeepBrainSegUI:
     def AxialScroll(self, *args):
         print('AxialScroll', int(args[0]))
         self.slice3 = max(0, int(args[0]) - 1)
+        print (self.overlay_flag)
         if not self.overlay_flag:
             self.update_main_view(self.main_vol, self.slice1, self.slice2, self.slice3)
         else:
