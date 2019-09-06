@@ -1,3 +1,9 @@
+#! /usr/bin/env python
+#  -*- coding: utf-8 -*-
+#
+# author: Avinash Kori
+# contact: koriavinash1@gmail.com
+
 import torch
 import SimpleITK as sitk
 import numpy as np
