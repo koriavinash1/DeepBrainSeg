@@ -25,56 +25,64 @@ def set_Tk_var():
     global selectedButton
     selectedButton = tk.StringVar()
 
+def Aboutus():
+    print('DeepBrainSeg1_support.Aboutus')
+    sys.stdout.flush()
+
 def AxialScroll(*args):
-    print('DeepBrainSeg_support.AxialScroll')
+    print('DeepBrainSeg1_support.AxialScroll')
     sys.stdout.flush()
 
 def CorronalScroll(*args):
-    print('DeepBrainSeg_support.CorronalScroll')
+    print('DeepBrainSeg1_support.CorronalScroll')
     sys.stdout.flush()
 
 def FlairView():
-    print('DeepBrainSeg_support.FlairView', selectedButton)
+    print('DeepBrainSeg1_support.FlairView')
+    sys.stdout.flush()
+
+def GetRadiomics():
+    print('DeepBrainSeg1_support.GetRadiomics')
     sys.stdout.flush()
 
 def Get_Segmentation():
-    print('DeepBrainSeg_support.Get_Segmentation')
+    print('DeepBrainSeg1_support.Get_Segmentation')
     sys.stdout.flush()
 
 def Load_Flair():
-    print('DeepBrainSeg_support.Load_Flair')
+    print('DeepBrainSeg1_support.Load_Flair')
     sys.stdout.flush()
 
 def Load_T1():
-    print('DeepBrainSeg_support.Load_T1')
+    print('DeepBrainSeg1_support.Load_T1')
     sys.stdout.flush()
 
 def Load_T1ce():
-    print('DeepBrainSeg_support.Load_T1ce')
+    print('DeepBrainSeg1_support.Load_T1ce')
     sys.stdout.flush()
 
 def Load_T2():
-    print('DeepBrainSeg_support.Load_T2')
+    print('DeepBrainSeg1_support.Load_T2')
     sys.stdout.flush()
 
 def SagitalScroll(*args):
-    print('DeepBrainSeg_support.SagitalScroll', int(args[0]))
+    print('DeepBrainSeg1_support.SagitalScroll')
     sys.stdout.flush()
 
 def SegmentationOverlay():
-    print('DeepBrainSeg_support.SegmentationOverlay')
+    print('DeepBrainSeg1_support.SegmentationOverlay')
     sys.stdout.flush()
 
 def T1View():
-    print('DeepBrainSeg_support.T1View', selectedButton)
+    print('DeepBrainSeg1_support.T1View')
     sys.stdout.flush()
 
 def T1ceView():
-    print('DeepBrainSeg_support.T1ceView', selectedButton)
+    print('DeepBrainSeg1_support.T1ceView')
     sys.stdout.flush()
 
 def T2View():
-    print('DeepBrainSeg_support.T2View', selectedButton)
+    print('DeepBrainSeg1_support.T2View')
     sys.stdout.flush()
 
 def init(top, gui, *args, **kwargs):
