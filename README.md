@@ -70,7 +70,9 @@ segmentor.get_segmentation(t1_path, t2_path, t1ce_path, flair_path, save = True)
 
 # Steps followed for inference:
 
-+ Our algorithm makes use of ANTs framework for mask generation. First call deepSeg class build ANTs framework locally in /tmp/DeepBrainSeg
++ Our algorithm makes use of ANTs framework for mask generation. First call deepSeg class build ANTs framework locally in ~/.DeepBrainSeg
+
++ First call deepSeg downloads all pretrained models locally in ~/.DeepBrainSeg
 
 + Final segmentation is the result of ensemble of 4 different models:
     
