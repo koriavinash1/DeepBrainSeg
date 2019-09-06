@@ -97,7 +97,7 @@ class DeepBrainSegUI:
         self.style.map('.',background=
             [('selected', _compcolor), ('active',_ana2color)])
 
-        top.geometry("1385x824+210+65")
+        top.geometry("1385x947+327+65")
         top.title("DeepBrainSeg")
         top.configure(highlightcolor="black")
         self.progress_bar = 0
@@ -277,12 +277,18 @@ class DeepBrainSegUI:
         self.seg_canvas.configure(relief="ridge")
         self.seg_canvas.configure(selectbackground="#c4c4c4")
 
-        # self.LogoCanvas = tk.Canvas(top)
-        # self.LogoCanvas.place(relx=0.007, rely=0.011, relheight=0.117
-        #         , relwidth=0.983)
-        # self.LogoCanvas.configure(borderwidth="2")
-        # self.LogoCanvas.configure(relief="ridge")
-        # self.LogoCanvas.configure(selectbackground="#c4c4c4")
+        self.LogoCanvas = tk.Canvas(top)
+        self.LogoCanvas.place(relx=0.007, rely=0.011, relheight=0.117
+                , relwidth=0.983)
+        self.LogoCanvas.configure(borderwidth="2")
+        self.LogoCanvas.configure(relief="ridge")
+        self.LogoCanvas.configure(selectbackground="#c4c4c4")
+        logo = PIL.Image.open('../imgs/logo.png')
+        true_size = logo.size
+        size = (int(1385*0.983), int(947*0.117))
+
+        self.logo_image = PIL.ImageTk.PhotoImage(image = logo.resize(size))
+        self.LogoCanvas.create_image(0, 0, image=self.logo_image, anchor=tk.NW)
 
 
         self.slice1 = 0
@@ -379,7 +385,7 @@ class DeepBrainSegUI:
         true_size = (vol.shape[0], vol.shape[2])
         size = (self.AxialCanvas.winfo_width(), self.AxialCanvas.winfo_height())
         size = (size[0], int(true_size[0]/true_size[1])*size[1]) if size[0] < size[1] else (int(true_size[1]/true_size[0])*size[0], size[1])
-
+    
         self.SagitalCanvas_image = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(plot_normalize(np.flipud(vol[:, slice2, :].T))).resize(size))
         self.SagitalCanvas.create_image(0, 0, image=self.SagitalCanvas_image, anchor=tk.NW)
 
@@ -400,6 +406,8 @@ class DeepBrainSegUI:
         alpha = np.zeros_like(pred).astype("float")
         alpha[pred > 0] = alpha_val
         alpha = alpha[..., None]
+        print (np.unique(alpha))
+
         true_size = vol.shape[:2]
         size = (self.AxialCanvas.winfo_width(), self.AxialCanvas.winfo_height())
         size = (size[0], int(true_size[0]/true_size[1])*size[1]) if size[0] < size[1] else (int(true_size[1]/true_size[0])*size[0], size[1])
@@ -473,7 +481,7 @@ class DeepBrainSegUI:
 
     def SegmentationOverlay(self):
         print ("overlay view")
-        self.overlay_flag = not self.overlay_flag
+        self.overlay_flag = True
         self.update_main_view_overlay(self.main_vol, self.prediction, self.slice1, self.slice2, self.slice3)
         pass
 
@@ -604,12 +612,12 @@ class DeepBrainSegUI:
         except:
             ValueError 
 
-        self.prediction = get_brainsegmentation.get_segmentation(self.T1filename, 
-                                                                self.T2filename, 
-                                                                self.T1cefilename, 
-                                                                self.Flairfilename)
+        # self.prediction = get_brainsegmentation.get_segmentation(self.T1filename, 
+        #                                                         self.T2filename, 
+        #                                                         self.T1cefilename, 
+        #                                                         self.Flairfilename)
 
-        # self.prediction = nib.load(os.path.join(os.path.dirname(self.T2filename), 'seg.nii.gz')).get_data()
+        self.prediction = nib.load(os.path.join(os.path.dirname(self.T2filename), 'seg.nii.gz')).get_data()
 
         mid_slice = self.prediction.shape[2]//2
 

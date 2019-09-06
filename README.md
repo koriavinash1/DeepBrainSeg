@@ -15,13 +15,23 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 
 ![Results](./imgs/results.png)
 
-### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
 
-
-#### python version: 3.5
-#### installation: ```pip install DeepBrainSeg```
+> python version: 3.5
+> installation: ```pip install DeepBrainSeg```
 
 <hline>
+
+## UI
+We also provide UI based tool for tumor segmentation visualization. It can be used by running the following commands after cloning the repo.
+```
+cd ui
+python3 DeepBrainSegUI.py
+```
+![normal](./imgs/normal.png)
+![overlay1](./imgs/overlay1.png)
+![overlay2](./imgs/overlay2.png)
+
+## Python API usage
 
 ### Basic usage
 
@@ -66,6 +76,7 @@ segmentor.get_segmentation(t1_path, t2_path, t1ce_path, flair_path, save = True)
 
 + More details about network architecture and training procedure can be found [here](https://link.springer.com/chapter/10.1007/978-3-030-11726-9_43)
 
+### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
 
 # Citation
 
