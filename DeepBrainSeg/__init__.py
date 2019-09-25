@@ -9,6 +9,7 @@ __email__ = ['koriavinash1@gmail.com']
 
 from .src.Tester import deepSeg
 from .src.helper import *
+from .src.radiomics import ExtractRadiomicFeatures
 import os
 import sys
 from time import gmtime, strftime

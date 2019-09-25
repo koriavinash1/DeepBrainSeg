@@ -9,7 +9,7 @@ import nibabel as nib
 import PIL
 from tkinter import filedialog
 import PIL.Image, PIL.ImageTk
-
+sys.path.append('..')
 
 try:
     import Tkinter as tk
@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 import os
 
 from DeepBrainSeg import deepSeg
-get_brainsegmentation = deepSeg(quick=True)
+get_brainsegmentation = deepSeg(quick=False)
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''
@@ -612,12 +612,12 @@ class DeepBrainSegUI:
         except:
             ValueError 
 
-        # self.prediction = get_brainsegmentation.get_segmentation(self.T1filename, 
-        #                                                         self.T2filename, 
-        #                                                         self.T1cefilename, 
-        #                                                         self.Flairfilename)
+        self.prediction = get_brainsegmentation.get_segmentation(self.T1filename, 
+                                                                self.T2filename, 
+                                                                self.T1cefilename, 
+                                                                self.Flairfilename)
 
-        self.prediction = nib.load(os.path.join(os.path.dirname(self.T2filename), 'seg.nii.gz')).get_data()
+        # self.prediction = nib.load(os.path.join(os.path.dirname(self.T2filename), 'seg.nii.gz')).get_data()
 
         mid_slice = self.prediction.shape[2]//2
 

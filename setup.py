@@ -22,6 +22,7 @@ setuptools.setup(
          'pandas',
          'scipy',
          'pydensecrf',
+         'pyradiomics',
          'scikit-image'
          ],
      classifiers=[
