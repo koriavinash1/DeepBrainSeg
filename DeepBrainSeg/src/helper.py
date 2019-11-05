@@ -4,7 +4,6 @@ from pydensecrf.utils import unary_from_softmax, create_pairwise_bilateral, crea
 import SimpleITK as sitk
 import numpy as np
 import nibabel as nib
-import tensorflow as tf
 
 from scipy.ndimage.measurements import label
 from skimage.morphology import erosion, dilation
