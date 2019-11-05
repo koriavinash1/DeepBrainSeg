@@ -107,4 +107,4 @@ If you use some of our work, please cite our work:
 
 ## Contact 
 
-* Avinash Kori (avinashgkori@smail.iitm.ac.in or koriavinash1@gmail.com)
+* Avinash Kori (koriavinash1@gmail.com)

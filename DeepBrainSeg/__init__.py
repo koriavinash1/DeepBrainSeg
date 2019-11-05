@@ -49,6 +49,16 @@ if (not os.path.exists(ants_path)) or (os.listdir(ants_path) == []):
 	os.system('git clone https://github.com/stnava/ANTs.git')
 	os.makedirs(os.path.join(ants_path, 'bin/ants'))
 	os.chdir(os.path.join(ants_path, 'bin/ants'))
+	print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Cmake Latest version installation')
+	os.system('wget https://github.com/Kitware/CMake/releases/download/v3.15.3/cmake-3.15.3.tar.gz')
+	os.system('tar xvzf cmake-3.15.3.tar.gz')
+	os.chdir('cmake-3.15.3')
+	os.system('./bootstrap')
+	os.system('make')
+	os.system('sudo make install')
+
+	os.system('make '+os.path.join(ants_path, 'code/ANTs'))
+	os.system('make -j 2')
 	try:
 		print (os.getcwd())
 		os.system('cmake '+os.path.join(ants_path, 'code/ANTs'))
