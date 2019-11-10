@@ -73,24 +73,31 @@ class Coregistration(object):
         """
         print(patient_folder)
         all_files = glob.glob(patient_folder+'/*')
-        fixed_file = glob.glob(patient_folder+'/*T1CE.nii.gz')[0]
+
+        try:
+            fixed_file = glob.glob(patient_folder+'/*T1CE.nii.gz')[0]
+        except:
+            fixed_file = glob.glob(patient_folder+'/*t1ce.nii.gz')[0]
+        finally:
+            fixed_file = glob.glob(patient_folder+'/*t1c.nii.gz')[0]
+
         fixed_image =  sitk.ReadImage(fixed_file, sitk.sitkFloat32)
         
         p_name = os.path.split(patient_folder)[-1]
         
         out1 = os.path.join(save_path, p_name)
-        out2 = os.path.join(OUTPUT_DIR_TFM, p_name)
+        out2 = os.path.join(save_path, p_name)
         if not os.path.exists(out1) and not os.path.exists(out2):
-            os.mkdir(out1)
-            os.mkdir(out2)
+            os.makedirs(out1, exist_ok=True)
+            os.makedirs(out2, exist_ok=True)
+
         if resize:
-            out_r = os.path.join(OUTPUT_DIR_RESIZED,p_name)
-            if not os.path.exists(out_r):
-                os.mkdir(out_r)
+            out_r = os.path.join(save_path, p_name)
+            os.mkdir(out_r, exist_ok=True)
             
             
         for i in all_files:
-            if ('T1CE.nii.gz' not in i) and ('_mask.nii' not in i):
+            if ('T1CE.nii.gz' not in i) and ('mask.nii' not in i):
                 moving_image = sitk.ReadImage(i,sitk.sitkFloat32)
                 initial_transform = sitk.CenteredTransformInitializer(fixed_image, 
                                                           moving_image, 
@@ -109,8 +116,11 @@ class Coregistration(object):
                 print('Final metric value: {0}'.format(self.registration_method.GetMetricValue()))
                 print('Optimizer\'s stopping condition, {0}'.format(self.registration_method.GetOptimizerStopConditionDescription()))
                 
-                moving_resampled= sitk.Resample(moving_image, fixed_image, final_transform, 
-                                                sitk.sitkLinear, 0.0, moving_image.GetPixelID())
+                moving_resampled= sitk.Resample(moving_image, 
+                                                fixed_image, 
+                                                final_transform, 
+                                                sitk.sitkLinear, 0.0, 
+                                                moving_image.GetPixelID())
                 
                 seq_file = os.path.split(i)[-1]
                 seq_name = seq_file.split('.nii')[0]
