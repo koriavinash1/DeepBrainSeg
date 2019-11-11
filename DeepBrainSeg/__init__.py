@@ -7,7 +7,6 @@ __maintainer__ = ['Avinash Kori']
 __email__ = ['koriavinash1@gmail.com']
 
 
-from .tumor.Tester import tumorSeg
 import os
 import sys
 from time import gmtime, strftime
@@ -68,3 +67,14 @@ if (not os.path.exists(ants_path)) or (os.listdir(ants_path) == []):
 	os.system('make install 2>&1 | tee install.log')
 
 os.chdir(current_path)
+
+bet_path = os.path.join(home, '.DeepBrainSeg/ants')
+current_path = os.getcwd()
+if (not os.path.exists(ants_path)) or (os.listdir(ants_path) == []):
+	os.system('git clone https://github.com/MIC-DKFZ/HD-BET')
+	os.chdir(os.path.join(bet_path, 'HD-BET'))
+	os.system('pip install -e .')
+		
+
+
+

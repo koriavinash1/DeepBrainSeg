@@ -7,6 +7,17 @@
 
 This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (CNN) for segmentation of the brain tumor and its constituents from multi modal Magnetic Resonance Images (MRI). The dense connectivity pattern used in the segmentation network enables effective reuse of features with lesser number of network parameters. On the BraTS validation data, the segmentation network achieved a whole tumor, tumor core and active tumor dice of 0.89, 0.76, 0.76 respectively.
 
+## Features
+
+- Brain Tumor Segmentation
+- Brain Mask Generation SkullStripping (currently using HD-BET and ANTs)
+- Radiomic Features
+- Coregistration
+- Dcm and nifty support (converts dcm to nifty and works)
+- UI based inference framework
+[] Whole Brain Segmentation
+
+
 ## Installation
 
 PyPi based installation:
@@ -24,15 +35,34 @@ python3 setup.py install
 ```
 <hr>
 
-# Pipeline
+Also check examples for preprocessing scripts
+
+## Citation
+
+If you use DeepBrainSeg, please cite our work:
+
+```
+@inproceedings{kori2018ensemble,
+  title={Ensemble of Fully Convolutional Neural Network for Brain Tumor Segmentation from Magnetic Resonance Images},
+  author={Kori, Avinash and Soni, Mehul and Pranjal, B and Khened, Mahendra and Alex, Varghese and Krishnamurthi, Ganapathy},
+  booktitle={International MICCAI Brainlesion Workshop},
+  pages={485--496},
+  year={2018},
+  organization={Springer}
+}
+``` 
+
+## Pipeline for Segmentation
 
 ![pipeline](./imgs/pipeline.png)
 
-# Results
+
+## Results for Segmentation
 
 ![Results](./imgs/results.png)
 
-# UI
+
+## UI
 We also provide UI based tool for tumor segmentation visualization. It can be used by running the following commands after cloning the repo.
 ```
 cd ui
@@ -40,6 +70,7 @@ python3 DeepBrainSegUI.py
 ```
 ![normal](./imgs/normal.png)
 ![overlay2](./imgs/overlay2.png)
+
 
 ## Python API usage
 
@@ -68,43 +99,19 @@ segmentor.get_segmentation(t1_path, t2_path, t1ce_path, flair_path, save = True)
 
 <hline>
 
-# Steps followed for inference:
+## Steps followed for tumor segmentation inference:
 
 + Our algorithm makes use of ANTs framework for mask generation. First call deepSeg class build ANTs framework locally in ~/.DeepBrainSeg
-
 + First call deepSeg downloads all pretrained models locally in ~/.DeepBrainSeg
-
 + Final segmentation is the result of ensemble of 4 different models:
-    
     + ABLNet (modelABL.py, Air brain Lesion Network)
-
     + 3DBrainNet (model3DBNET.py, 3D multiresolution CNN)
-    
     + Tiramisu2D (modelTis2D.py, 57 layered 2D CNN)
-    
     + Tiramisu 3D (modelTir3D.py, 57 layered 3D CNN)
-
 + Extensive documentation will be uploaded soon, along with transfer learning framework
-
 + More details about network architecture and training procedure can be found [here](https://link.springer.com/chapter/10.1007/978-3-030-11726-9_43)
 
 ### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
 
-# Citation
-
-If you use some of our work, please cite our work:
-
-```
-@inproceedings{kori2018ensemble,
-  title={Ensemble of Fully Convolutional Neural Network for Brain Tumor Segmentation from Magnetic Resonance Images},
-  author={Kori, Avinash and Soni, Mehul and Pranjal, B and Khened, Mahendra and Alex, Varghese and Krishnamurthi, Ganapathy},
-  booktitle={International MICCAI Brainlesion Workshop},
-  pages={485--496},
-  year={2018},
-  organization={Springer}
-}
-``` 
-
 ## Contact 
-
 * Avinash Kori (koriavinash1@gmail.com)

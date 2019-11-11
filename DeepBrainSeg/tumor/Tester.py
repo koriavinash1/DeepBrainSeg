@@ -174,8 +174,7 @@ class tumorSeg():
             transformed_array = transformed_array.unsqueeze(0) ## neccessary if batch size == 1
             transformed_array = transformed_array.to(self.device)
             logits            = self.ABLnet(transformed_array).detach().cpu().numpy()# 3 x 240 x 240  
-            
-            generated_output_logits[:,:,:, slices] = logits
+            generated_output_logits[:,:,:, slices] = logits.transpose(0, 1, 3, 2)
 
         final_pred  = apply_argmax_to_logits(generated_output_logits)
         final_pred  = perform_postprocessing(final_pred)
@@ -373,12 +372,12 @@ class tumorSeg():
         brain_mask = self.get_ants_mask(t2_path)
 
         mask  =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
-        mask  =  np.swapaxes(mask,1, 0)
+        # mask  =  np.swapaxes(mask,1, 0)
            
         if not self.quick:
             final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
             final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair).transpose(0, 2, 1, 3)
             final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
             final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
@@ -391,6 +390,7 @@ class tumorSeg():
         final_pred              = adjust_classes(final_pred)
 
         if save_path:
+            os.makedirs(save_path, exist_ok=True)
             save_volume(final_pred, affine, os.path.join(save_path, 'DeepBrainSeg_Prediction'))
 
         return final_pred

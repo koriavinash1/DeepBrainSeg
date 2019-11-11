@@ -23,7 +23,8 @@ setuptools.setup(
          'scipy',
          'pydensecrf',
          'pyradiomics',
-         'scikit-image'
+         'scikit-image',
+	 'dicom2nifti'
          ],
      classifiers=[
          "Programming Language :: Python :: 3.5",

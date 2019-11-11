@@ -200,7 +200,7 @@ def combine_logits_GM(x):
 
 def combine_logits_AM(x):
     # x array of logits
-    assert len(x.shape) == 5
+    assert len(x[0].shape) == 4
     final = np.zeros_like(x[0])
     for ii in x:
         final = final + ii
