@@ -2,6 +2,7 @@ import SimpleITK as sitk
 import os
 import glob
 from tqdm import tqdm
+from time import gmtime, strftime
 
 
 
@@ -68,71 +69,63 @@ class Coregistration(object):
         image = resampler.Execute(image)
         return image
 
-    def register_patient(self, patient_folder, save_path, resize=True):
+    def register_patient(self, moving_images, 
+                            fixed_image, 
+                            save_path,
+                            save_transform=True,
+                            isotropic=True):
         """
+        moving_images : {'key1': path1, 'key2': path2}
+        fixed_image :t1c path
+        save_path: save path 
         """
-        print(patient_folder)
-        all_files = glob.glob(patient_folder+'/*')
+        fixed_name = fixed_image.split('/').pop().split('.')[0]
+        fixed_image =  sitk.ReadImage(fixed_image, sitk.sitkFloat32)
+        coregistration_path = os.path.join(save_path, 'registered')
+        isotropic_path = os.path.join(save_path, 'isotropic')
+        transform_path = os.path.join(save_path, 'transforms')
 
-        try:
-            fixed_file = glob.glob(patient_folder+'/*T1CE.nii.gz')[0]
-        except:
-            fixed_file = glob.glob(patient_folder+'/*t1ce.nii.gz')[0]
-        finally:
-            fixed_file = glob.glob(patient_folder+'/*t1c.nii.gz')[0]
+        if not os.path.exists(coregistration_path):
+            os.makedirs(coregistration_path, exist_ok=True)
 
-        fixed_image =  sitk.ReadImage(fixed_file, sitk.sitkFloat32)
-        
-        p_name = os.path.split(patient_folder)[-1]
-        
-        out1 = os.path.join(save_path, p_name)
-        out2 = os.path.join(save_path, p_name)
-        if not os.path.exists(out1) and not os.path.exists(out2):
-            os.makedirs(out1, exist_ok=True)
-            os.makedirs(out2, exist_ok=True)
+        if isotropic:
+            if not os.path.exists(isotropic_path):
+                os.makedirs(isotropic_path, exist_ok=True)
 
-        if resize:
-            out_r = os.path.join(save_path, p_name)
-            os.mkdir(out_r, exist_ok=True)
+        if save_transform:
+            if not os.path.exists(transform_path):
+                os.makedirs(transform_path, exist_ok=True)
+
+        for key in moving_images.keys():
+            moving_image = sitk.ReadImage(moving_images[key], sitk.sitkFloat32)
+            initial_transform = sitk.CenteredTransformInitializer(fixed_image, 
+                                                      moving_image, 
+                                                      sitk.VersorRigid3DTransform(), 
+                                                      sitk.CenteredTransformInitializerFilter.GEOMETRY)
+
             
+            self.registration_method.SetInitialTransform(initial_transform, inPlace=False)
+            final_transform = self.registration_method.Execute(sitk.Cast(fixed_image, sitk.sitkFloat32), 
+                                              sitk.Cast(moving_image, sitk.sitkFloat32))
             
-        for i in all_files:
-            if ('T1CE.nii.gz' not in i) and ('mask.nii' not in i):
-                moving_image = sitk.ReadImage(i,sitk.sitkFloat32)
-                initial_transform = sitk.CenteredTransformInitializer(fixed_image, 
-                                                          moving_image, 
-                                                          sitk.VersorRigid3DTransform(), 
-                                                          sitk.CenteredTransformInitializerFilter.GEOMETRY)
+            print("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " +  'Final metric value: {0}'.format(self.registration_method.GetMetricValue()))
+            print("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " +  'Optimizer\'s stopping condition, {0}'.format(self.registration_method.GetOptimizerStopConditionDescription()))
+            
+            moving_resampled= sitk.Resample(moving_image, 
+                                            fixed_image, 
+                                            final_transform, 
+                                            sitk.sitkLinear, 0.0, 
+                                            moving_image.GetPixelID())
+            
+            sitk.WriteImage(moving_resampled, os.path.join(coregistration_path, key+'.nii.gz'))
+            sitk.WriteTransform(final_transform, os.path.join(transform_path, key+'.tfm'))
+            # Write Fixed image in nii.gz
+            if isotropic:
+                print("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " +  'converting to isotropic volume')
+                moving_resized = self.resize_sitk_3D(moving_resampled)
+                sitk.WriteImage(moving_resized, os.path.join(isotropic_path, key+'.nii.gz'))
 
-    #            moving_resampled = sitk.Resample(moving_image, fixed_image,
-    #                                             initial_transform,
-    #                                             sitk.sitkLinear, 0.0, 
-    #                                             moving_image.GetPixelID())
-                
-                self.registration_method.SetInitialTransform(initial_transform, inPlace=False)
-                final_transform = self.registration_method.Execute(sitk.Cast(fixed_image, sitk.sitkFloat32), 
-                                                  sitk.Cast(moving_image, sitk.sitkFloat32))
-                
-                print('Final metric value: {0}'.format(self.registration_method.GetMetricValue()))
-                print('Optimizer\'s stopping condition, {0}'.format(self.registration_method.GetOptimizerStopConditionDescription()))
-                
-                moving_resampled= sitk.Resample(moving_image, 
-                                                fixed_image, 
-                                                final_transform, 
-                                                sitk.sitkLinear, 0.0, 
-                                                moving_image.GetPixelID())
-                
-                seq_file = os.path.split(i)[-1]
-                seq_name = seq_file.split('.nii')[0]
-                sitk.WriteImage(moving_resampled, os.path.join(out1, seq_name+'.nii.gz'))
-                sitk.WriteTransform(final_transform, os.path.join(out2, seq_name+'.tfm'))
-                # Write Fixed image in nii.gz
-                sitk.WriteImage(fixed_image, os.path.join(out1, fixed_file.split('/')[-1].split('.')[0]+'.nii.gz'))            
-                if resize:
-                    print('Resizing')
-                    moving_resized = self.resize_sitk_3D(moving_resampled)
-                    print('Saving')
-                    sitk.WriteImage(moving_resized, os.path.join(out_r, seq_name+'.nii.gz'))
-                    fixed_resized = self.resize_sitk_3D(fixed_image)
-                    sitk.WriteImage(fixed_resized, os.path.join(out_r, fixed_file.split('/')[-1].split('.')[0]+'.nii.gz'))
-
+        sitk.WriteImage(fixed_image, os.path.join(coregistration_path, fixed_name+'.nii.gz'))            
+        if isotropic:
+            fixed_resized = self.resize_sitk_3D(fixed_image)
+            sitk.WriteImage(fixed_resized, os.path.join(isotropic_path, fixed_name+'.nii.gz'))

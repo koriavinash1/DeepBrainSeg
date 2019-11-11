@@ -16,7 +16,7 @@ def singleDicom2nifti(input_path, output_path, verbose=False):
     if verbose:
         print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Working on: {}'.format(input_path))
 
-    dicom2nifti.convert_directory(input_path, output_path)
+    dicom2nifti.dicom_series_to_nifti(input_path, output_path)
 
 
 def convertDcm2nifti(path_json, output_dir, verbose=False):
