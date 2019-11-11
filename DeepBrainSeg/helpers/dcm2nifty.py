@@ -140,9 +140,11 @@ def dicom_to_nifti(seq_dir, out_dir, error_file=[], num=0, csv_write=False):
         ds = dicom.read_file(dicom_filename) 
        	desc = (ds.SeriesDescription).split('(')[0]
         desc = desc.strip()
+
         # print (desc)
         desc = desc.replace(" ", "_")
         desc = desc.replace("/", "_")        
+        
         # print (desc)
         dest = out_dir + '/'+ desc+ '_' + str(num)+'.nii'+'.gz'
         sitk.WriteImage(image, dest)
@@ -167,9 +169,9 @@ def dicom_to_nifti(seq_dir, out_dir, error_file=[], num=0, csv_write=False):
                 wr = csv.writer(fp)
                 wr.writerow(data)
     except Exception as e:
-    	print(str(e))
-        error_file.append(seq_dir)
-        
+    	error_file.append(seq_dir)
+
+
 def process_patient_series(series_dir, out_dir, error_list, csv_f = CSV_FILE):
     D = get_dval(series_dir)
     dest = out_dir + '/' + D
@@ -181,6 +183,7 @@ def process_patient_series(series_dir, out_dir, error_list, csv_f = CSV_FILE):
         i = i+1
         dicom_to_nifti(l,dest,error_list,i, csv_f)
         
+
 def process_patient(pat_dir, output_dir, error_list):
     pat_name = os.path.split(pat_dir)[-1]
     dest = output_dir + '/' + pat_name
@@ -190,7 +193,8 @@ def process_patient(pat_dir, output_dir, error_list):
     for s in tqdm.tqdm(series_list):
     	
         process_patient_series(s, dest, error_list)
-        
+
+
 def convert_dir(data_dir, output_dir):
     '''
     '''
@@ -201,6 +205,7 @@ def convert_dir(data_dir, output_dir):
     for s in tqdm.tqdm(pat_file_list):
         process_patient(s, output_dir, error_list)
     return error_list
+
 
 if __name__=="__main__":
     convert_dir(DATA_DIR, DEST_DIR)    
