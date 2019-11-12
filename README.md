@@ -9,13 +9,13 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 
 ## Features
 
-- Brain Tumor Segmentation
-- Brain Mask Generation SkullStripping (currently using HD-BET and ANTs)
-- Radiomic Features
-- Coregistration
-- Dcm and nifty support (converts dcm to nifty and works)
-- UI based inference framework
-[] Whole Brain Segmentation
+- [x] Brain Tumor Segmentation
+- [x] Brain Mask Generation SkullStripping (currently using HD-BET and ANTs)
+- [x] Radiomic Features
+- [x] Coregistration
+- [x] Dcm and nifty support (converts dcm to nifty and works)
+- [x] UI based inference framework
+- [ ] Whole Brain Segmentation
 
 
 ## Installation
@@ -33,9 +33,8 @@ git clone https://github.com/koriavinash1/DeepBrainSeg.git
 cd DeepBrainSeg
 python3 setup.py install
 ```
-<hr>
 
-Also check examples for preprocessing scripts
+<hr>
 
 ## Citation
 
@@ -64,6 +63,7 @@ If you use DeepBrainSeg, please cite our work:
 
 ## UI
 We also provide UI based tool for tumor segmentation visualization. It can be used by running the following commands after cloning the repo.
+
 ```
 cd ui
 python3 DeepBrainSegUI.py
@@ -74,7 +74,7 @@ python3 DeepBrainSegUI.py
 
 ## Python API usage
 
-### Basic usage
+### Brain tumor segmentation
 
 > for data in BraTs format
 ```
@@ -99,6 +99,50 @@ segmentor.get_segmentation(t1_path, t2_path, t1ce_path, flair_path, save = True)
 
 <hline>
 
+### brain seq coregistration to t1c
+```
+from DeepBrainSeg.registration import Coregistration
+coreg = Coregistration()
+
+moving_imgs = {'t1': t1path,
+               't2': t2path,
+               'flair': flairpath}
+fixed_img =  os.path.join(t1cpath)
+coreg.register_patient(moving_images    = moving_imgs,
+                            fixed_image = fixed_img,
+                            save_path   = pathtosave)
+```
+<hline>
+  
+### brain mask extraction (skull stripping)
+```
+from DeepBrainSeg.brainmask.hdbetmask import get_bet_mask
+from DeepBrainSeg.brainmask.antsmask import get_ants_mask
+
+get_bet_mask(vol_path, savepath)
+
+or 
+
+get_ants_mask(vol_path, savepath)
+```
+
+### Radiomics feature exctractor
+```
+from DeepBrainSeg.radiomics import ExtractRadiomicFeatures
+
+extractor = ExtractRadiomicFeatures(input_mask=None, 
+                                    save_path=None, 
+                                    seq='Flair',
+                                    class_ = 'ET')
+extractor.first_order()
+extractor.glcm_features()
+extractor.gldm_features()
+
+or
+
+extractor.all_features()
+```
+
 ## Steps followed for tumor segmentation inference:
 
 + Our algorithm makes use of ANTs framework for mask generation. First call deepSeg class build ANTs framework locally in ~/.DeepBrainSeg
@@ -114,4 +158,4 @@ segmentor.get_segmentation(t1_path, t2_path, t1ce_path, flair_path, save = True)
 ### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
 
 ## Contact 
-* Avinash Kori (koriavinash1@gmail.com)
+* Avinash Kori (koriavinash1@gmail1.com)
