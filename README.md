@@ -158,4 +158,4 @@ extractor.all_features()
 ### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
 
 ## Contact 
-* Avinash Kori (koriavinash1@gmail1.com)
+* Avinash Kori (koriavinash1@gmail.com)
