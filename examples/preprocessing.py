@@ -36,7 +36,8 @@ for subject in dcm_subjects:
 
     for key in json.keys():
         get_bet_mask(os.path.join('../sample_results/nifty/', subject.split('/').pop(), key+'.nii.gz'), 
-			os.path.join('../sample_results/skull_strip/{}/'.format(subject.split('/').pop())))
+			os.path.join('../sample_results/skull_strip/{}/'.format(subject.split('/').pop())),
+                        device = 'cpu')
 
     # Coregistration
     moving_imgs = {'t1': os.path.join('../sample_results/skull_strip/{}/{}.nii.gz'.format(subject.split('/').pop(), 't1')),

@@ -68,12 +68,14 @@ if (not os.path.exists(ants_path)) or (os.listdir(ants_path) == []):
 
 os.chdir(current_path)
 
-bet_path = os.path.join(home, '.DeepBrainSeg/ants')
+bet_path = os.path.join(home, '.DeepBrainSeg/bets')
 current_path = os.getcwd()
-if (not os.path.exists(ants_path)) or (os.listdir(ants_path) == []):
-	os.system('git clone https://github.com/MIC-DKFZ/HD-BET')
-	os.chdir(os.path.join(bet_path, 'HD-BET'))
-	os.system('pip install -e .')
+if (not os.path.exists(bet_path)) or (os.listdir(bet_path) == []):
+        os.makedirs(bet_path, exist_ok=True)
+        os.chdir(bet_path)
+        os.system('git clone https://github.com/MIC-DKFZ/HD-BET')
+        os.chdir(os.path.join(bet_path, 'HD-BET'))
+        os.system('pip install -e .')
 		
 
 
