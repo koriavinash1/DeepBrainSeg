@@ -20,7 +20,7 @@ setuptools.setup(
          'SimpleITK',
          'tqdm',
          'pandas',
-         'scipy'
+         'scipy',
          'pydensecrf',
          'pyradiomics',
          'scikit-image==0.14',
