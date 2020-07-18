@@ -157,5 +157,11 @@ extractor.all_features()
 
 ### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
 
+## Windows 10 Installation Guide
+
+![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif)
+
+https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/WINDOWS%2010%20INSTALLATION%20GUIDE
+
 ## Contact 
 * Avinash Kori (koriavinash1@gmail.com)
