@@ -3,7 +3,7 @@ Windows 10 Installation Guide, by [God Bennett](https://github.com/JordanMicahBe
 
 Firstly, thanks to the [author](https://github.com/koriavinash1) for the hard work on DeepBrainSeg!
 
-Albeit, the DeepBrainSeg Library does not facilitate straight-forward Windows 10. The example images [in the original repository](https://github.com/koriavinash1/DeepBrainSeg/) are Mac based windows, and [the code in the original repostory also has Mac based programming comments](https://github.com/koriavinash1/DeepBrainSeg/blob/master/ui/DeepBrainSegUI.py), like "/usr/bin/env python", which seem to indicate that Mac was used for development of this product. 
+Albeit, the DeepBrainSeg Library does not facilitate straight-forward Windows 10 installation. The example images [in the original repository](https://github.com/koriavinash1/DeepBrainSeg/) are Mac based windows, and [the code in the original repostory also has Mac based programming comments](https://github.com/koriavinash1/DeepBrainSeg/blob/master/ui/DeepBrainSegUI.py), like "/usr/bin/env python", which seem to indicate that Mac was used for development of this product. 
 
 That said, here is a Windows 10 Guide, by [myself](https://github.com/JordanMicahBennett). If anyone faces any issues, let me know. ([For those curious why God Bennett is commenting from Jordan's profile, I legally changed my name from Jordan to God](https://www.researchgate.net/publication/342328687_Why_I_an_atheist_legally_changed_my_name_to_God)).
 
