@@ -160,8 +160,9 @@ extractor.all_features()
 ## Windows 10 Installation Guide
 
 ![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif)
+Figure: DeepBrainSeg on Windows 10.
 
-https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/WINDOWS%2010%20INSTALLATION%20GUIDE.md
+Installation Guide: https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/WINDOWS%2010%20INSTALLATION%20GUIDE.md
 
 ## Contact 
 * Avinash Kori (koriavinash1@gmail.com)
