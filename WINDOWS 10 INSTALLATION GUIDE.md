@@ -14,7 +14,7 @@ Figure: DeepBrainSeg on Windows 10.
 
 2. Install [Python 3.5.4 64 bit.](https://www.python.org/downloads/release/python-354/) You will notice below that everything going forward is 64 bit based!
 
-- Failure to do the above will result in python 3.5 base version related torch error, and python 3.6 will yield DeepBrainSeg related deepSeg import error! Not to mention, anaconda cloud has no distirbution of pydensecrf for python3.7. Stay with python 3.5 [as advised by author](https://github.com/koriavinash1/DeepBrainSeg/issues/9#issuecomment-576507447).
+- Failure to do the above will result in python 3.5 base version related torch error, and python 3.6 will yield DeepBrainSeg related deepSeg import error! Not to mention, anaconda cloud has no distribution of pydensecrf for python3.7, and I will mention why anaconda cloud is relevant below. Stay with python 3.5 [as advised by author](https://github.com/koriavinash1/DeepBrainSeg/issues/9#issuecomment-576507447).
 
 3. Install (by simply manually copying Lib and Scripts to python35 installation directory) pydensecrf, particularly "[win-64/pydensecrf-1.0rc2](https://anaconda.org/conda-forge/pydensecrf/1.0rc2/download/win-64/pydensecrf-1.0rc2-py36_0.tar.bz2)" (crucially, from [the anaconda cloud location](https://anaconda.org/conda-forge/pydensecrf/files)).
 
