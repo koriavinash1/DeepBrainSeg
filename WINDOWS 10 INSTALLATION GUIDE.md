@@ -65,3 +65,5 @@ You should see DeepBrainSeg installation being resolved below:
 python DeepBrainSegUI.py #as advised on the main repository or simply run the python file from IDLE35.
 `
 The result should be similar to what you see in [the first image of this readme](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif).
+
+*Note well*: The trained models are automatically downloaded to ~/.DeepBrainSeg (or home on mac), but automatically downloaded to C:\Users\<YourUserName>\.DeepBrainSeg on Windows!
