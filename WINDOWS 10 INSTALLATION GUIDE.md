@@ -11,7 +11,7 @@ That said, here is a Windows 10 Guide, by [myself](https://github.com/JordanMica
 ![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif)
 Figure_0: DeepBrainSeg starting up on Windows 10.
 
-![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference%20+DeepBrainSegUI%20running%20on%20Windows%2010.gif)
+![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference-DeepBrainSegUI-running-on-Windows-10.gif)
 
 Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segmentation takes maybe roughly 1 hour via torch_cpu, on my i76700 intel cpu!!)
 
@@ -70,7 +70,7 @@ You should see DeepBrainSeg installation being resolved below:
 python DeepBrainSegUI.py #as advised on the main repository or simply run the python file from IDLE35.
 `
 
-The result should be similar to what you see in [the first](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif) and [second](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference%20+DeepBrainSegUI%20running%20on%20Windows%2010.gif) images of this readme.
+The result should be similar to what you see in [the first](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif) and [second](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference-DeepBrainSegUI-running-on-Windows-10.gif) images of this readme.
 
 *Note well/tips*: 
 ===========
