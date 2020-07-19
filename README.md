@@ -162,7 +162,7 @@ extractor.all_features()
 ![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif)
 Figure_0: DeepBrainSeg starting up on Windows 10.
 
-![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference%20+DeepBrainSegUI%20running%20on%20Windows%2010.gif)
+![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference-DeepBrainSegUI-running-on-Windows-10.gif)
 
 Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segmentation takes maybe roughly 1 hour via torch_cpu, on my i76700 intel cpu!!)
 
