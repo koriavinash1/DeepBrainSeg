@@ -33,13 +33,7 @@ Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segm
 
 6. Install in particular, torch 1.2.0 from the location below, using the command below given python35 path is set:
 
-Cpu enabled option:
-
 `python -m pip install https://download.pytorch.org/whl/cpu/torch-1.2.0%2Bcpu-cp35-cp35m-win_amd64.whl`
-
-Gpu accelerated alternative (Note: [Cuda 9.2 (1.5gb)](https://developer.nvidia.com/cuda-92-download-archive) install is required for below):
-
-pip install torch==1.2.0+cu92 torchvision==0.4.0+cu92 -f https://download.pytorch.org/whl/torch_stable.html
 
 7. Install (by simply manually copying "**Lib/site packages**" folder to "**Lib/site packages**" in Python35 installation directory), in particular, torchvision 0.4.0 , "[win-64/torchvision-0.4.0-py35_cpu](https://anaconda.org/pytorch/torchvision/0.4.0/download/win-64/torchvision-0.4.0-py35_cpu.tar.bz2)" (crucially, from [page 4 of the anaconda cloud location](https://anaconda.org/pytorch/torchvision/files?page=4)).
 
