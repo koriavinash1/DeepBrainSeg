@@ -16,11 +16,11 @@ Figure: DeepBrainSeg on Windows 10.
 
 - Failure to do the above will result in python 3.5 base version related torch error, and python 3.6 will yield DeepBrainSeg related deepSeg import error! Not to mention, anaconda cloud has no distribution of pydensecrf for python3.7, and I will mention why anaconda cloud is relevant below. Stay with python 3.5 [as advised by author](https://github.com/koriavinash1/DeepBrainSeg/issues/9#issuecomment-576507447).
 
-3. Install pydensecrf (by simply manually copying **Lib/site packages** folder to **Lib/site packages** in Python35 installation directory), particularly "[win-64/pydensecrf-1.0rc2](https://anaconda.org/conda-forge/pydensecrf/1.0rc2/download/win-64/pydensecrf-1.0rc2-py36_0.tar.bz2)" (crucially, from [the anaconda cloud location](https://anaconda.org/conda-forge/pydensecrf/files)).
+3. Install pydensecrf (by simply manually copying "**Lib/site packages**" folder to "**Lib/site packages**" in Python35 installation directory), particularly "[win-64/pydensecrf-1.0rc2](https://anaconda.org/conda-forge/pydensecrf/1.0rc2/download/win-64/pydensecrf-1.0rc2-py36_0.tar.bz2)" (crucially, from [the anaconda cloud location](https://anaconda.org/conda-forge/pydensecrf/files)).
 
 - Failure to do the above will result in pydensecrf related build errors, in conjunction with c++ dependencies, if pip is used instead of the manual process above.
 
-4. Install pyradiomics (by simply manually copying **Lib/site packages** and **Scripts** folders to **Lib/site packages** and **Scripts** in Python35 installation directory) "[win-64/pyradiomics-2.1.0-py35_0.tar](https://anaconda.org/Radiomics/pyradiomics/2.1.0/download/win-64/pyradiomics-2.1.0-py35_0.tar.bz2)" (crucially from [the anaconda cloud location](https://anaconda.org/Radiomics/pyradiomics/files), because build errors come from attempt using pip)
+4. Install pyradiomics (by simply manually copying "**Lib/site packages**" and "**Scripts**" folders to "**Lib/site packages**" and "**Scripts**" in Python35 installation directory) "[win-64/pyradiomics-2.1.0-py35_0.tar](https://anaconda.org/Radiomics/pyradiomics/2.1.0/download/win-64/pyradiomics-2.1.0-py35_0.tar.bz2)" (crucially from [the anaconda cloud location](https://anaconda.org/Radiomics/pyradiomics/files), because build errors come from attempt using pip)
 
 - Failure to do the above will result in pydensecrf related build errors, in conjunction with c++ dependencies, if pip is used instead of the manual process above.
 
@@ -30,7 +30,7 @@ Figure: DeepBrainSeg on Windows 10.
 
 `python -m pip install https://download.pytorch.org/whl/cpu/torch-1.2.0%2Bcpu-cp36-cp36m-win_amd64.whl`
 
-7. Install (by simply manually copying **Lib/site packages** folder to **Lib/site packages** in Python35 installation directory), in particular, torchvision 0.4.0 , "[win-64/torchvision-0.4.0-py35_cpu](https://anaconda.org/pytorch/torchvision/0.4.0/download/win-64/torchvision-0.4.0-py35_cpu.tar.bz2)" (crucially, from [page 4 of the anaconda cloud location](https://anaconda.org/pytorch/torchvision/files?page=4)).
+7. Install (by simply manually copying "**Lib/site packages**" folder to "**Lib/site packages**" in Python35 installation directory), in particular, torchvision 0.4.0 , "[win-64/torchvision-0.4.0-py35_cpu](https://anaconda.org/pytorch/torchvision/0.4.0/download/win-64/torchvision-0.4.0-py35_cpu.tar.bz2)" (crucially, from [page 4 of the anaconda cloud location](https://anaconda.org/pytorch/torchvision/files?page=4)).
 
 - Failure to do the above will result in pydensecrf related build errors, in conjunction with c++ dependencies, if pip is used instead of the manual process above.
 
