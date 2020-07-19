@@ -66,4 +66,7 @@ python DeepBrainSegUI.py #as advised on the main repository or simply run the py
 `
 The result should be similar to what you see in [the first image of this readme](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif).
 
-*Note well*: The trained models are automatically downloaded to ~/.DeepBrainSeg (or home on mac), but automatically downloaded to C:\Users\<YourUserName>\.DeepBrainSeg on Windows!
+*Note well/tips*: 
+* The trained models are automatically downloaded to "~/.DeepBrainSeg" (or home on mac), but automatically downloaded to '''"C:\Users\<YourUserName>\.DeepBrainSeg"''' on Windows!
+* Ants mask generator, which needs to be used to generate a mask file for inference/real time test, is located in '''"DeepBrainSeg-master/DeepBrainSeg/brainmask/antsmask.py"'''
+* Sample non-graphical ui based segmentation sample located in '''"DeepBrainSeg-master/examples/tumorsegmentation.py"''', which reads a sample from "DeepBrainSeg-master_/sample_volume/brats".
