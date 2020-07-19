@@ -50,7 +50,7 @@ Figure: DeepBrainSeg on Windows 10.
 > import pydensecrf
 > 
 > import pydensecrf.densecrf 
-> #The above "import pydensecrf.densecrf " test may fail even if the one above succeeds! As advised in (7) torch and torchvision must match. If a "variable_length" issue error pops up, this means that numpy requires updating to the latest version. Typical pip works.
+> #The above "import pydensecrf.densecrf " test may fail even if the one above succeeds! As advised in (8) torch and torchvision must match. If a "variable_length" issue error pops up, this means that numpy requires updating to the latest version. Typical pip works.
 > 
 
 10. Finally run [DeepBrainSeg setup.py](https://github.com/koriavinash1/DeepBrainSeg/blob/master/setup.py). Install any other missing thing if applicable, using typical python pip.
@@ -59,7 +59,7 @@ You should see DeepBrainSeg installation being resolved below:
 ![image](https://user-images.githubusercontent.com/3666405/87859288-a0e51100-c8f9-11ea-97f6-17b476213dec.png)
 
 
-11. If no errors happen in the test, the it's time to launch the DeepBrainSeg user interface on Windows 10:
+11. If no errors happen in the test, then it's time to launch the DeepBrainSeg user interface on Windows 10:
 
 `
 python DeepBrainSegUI.py #as advised on the main repository or simply run the python file from IDLE35.
