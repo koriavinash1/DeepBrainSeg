@@ -72,4 +72,5 @@ The result should be similar to what you see in [the first image of this readme]
 
 * The trained models are automatically downloaded to **"~/.DeepBrainSeg"** (or home on mac), but automatically downloaded to **"C:\Users\<YourUserName>\.DeepBrainSeg"** on Windows!
 * Ants mask generator, which needs to be used to generate a mask file for inference/real time test, is located in **"DeepBrainSeg-master/DeepBrainSeg/brainmask/antsmask.py"**
+    * Crucially, follow [these guidelines](https://github.com/ANTsX/ANTs/wiki/Compiling-ANTs-on-Windows-10) to install ANTS on Windows. Change the "/opt/ANTS/bin" directory in **"DeepBrainSeg-master/DeepBrainSeg/brainmask/antsmask.py"** to point to wherever you installed ANTS. 
 * Sample non-graphical ui based segmentation sample located in **"DeepBrainSeg-master/examples/tumorsegmentation.py"**, which reads a sample from **"DeepBrainSeg-master_/sample_volume/brats"**.
