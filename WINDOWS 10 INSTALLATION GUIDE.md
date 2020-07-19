@@ -34,7 +34,7 @@ Figure: DeepBrainSeg on Windows 10.
 
 - Failure to do the above will result in pydensecrf related build errors, in conjunction with c++ dependencies, if pip is used instead of the manual process above.
 
-8. It is crucial that the items in (5) and (6) are installed above, no other version, unless you verify that any other versions of torch and torchvision you install match. 
+8. It is crucial that the items in (6) and (7) are installed above, no other version, unless you verify that any other versions of torch and torchvision you install match. 
 
 - Failure to do the above will result in import issues, including "Optional" error seen below:
 
