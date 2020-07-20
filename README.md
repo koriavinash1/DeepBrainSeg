@@ -160,11 +160,11 @@ extractor.all_features()
 ## Windows 10 Installation Guide
 
 ![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif)
-Figure_0: DeepBrainSeg starting up on Windows 10.
+**Figure_0**: DeepBrainSeg starting up on Windows 10.
 
 ![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference-DeepBrainSegUI-running-on-Windows-10.gif)
 
-Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segmentation takes ~2 hours via torch_cpu, on my i7 6700 intel cpu. Torch cuda is much faster, with ensemble inference taking only ~12 minutes, on gtx 1060 3gb)
+**Figure_1**: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Ensemble segmentation/inference takes ~2 hours via torch_cpu, on my i7 6700 intel cpu. Torch cuda/gpu on the other hand, is much faster, with ensemble segmentation/inference taking only ~10 minutes, on my gtx 1060 3gb)
 
 Installation Guide: https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/WINDOWS%2010%20INSTALLATION%20GUIDE.md
 
