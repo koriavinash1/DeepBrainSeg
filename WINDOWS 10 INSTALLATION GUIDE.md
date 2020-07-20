@@ -13,7 +13,7 @@ Figure_0: DeepBrainSeg starting up on Windows 10.
 
 ![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference-DeepBrainSegUI-running-on-Windows-10.gif)
 
-Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segmentation takes ~2 hours via torch_cpu, on my i7 6700 intel cpu. Torch cuda is much faster, with ensemble inference taking only ~12 minutes, on gtx 1060 3gb)
+Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segmentation takes ~2 hours via torch_cpu, on my i7 6700 intel cpu. Torch cuda is much faster, with ensemble inference taking only ~10 minutes, on gtx 1060 3gb)
 
 1. Don't run [DeepBrainSeg setup.py](https://github.com/koriavinash1/DeepBrainSeg/blob/master/setup.py) , until step 10. It matters not if you had already ran it, still proceed if you had already done so.
 
@@ -51,7 +51,7 @@ Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segm
 
 pip install torch==1.2.0+cu92 torchvision==0.4.0+cu92 -f https://download.pytorch.org/whl/torch_stable.html
 
-With the gpu option above, segmentation takes ~14 minutes, instead of ~2 hours required when using cpu options in (6) and (7).
+With the gpu option above, segmentation takes ~10 minutes, instead of ~2 hours required when using cpu options in (6) and (7).
 
 
 10. Test your torch, torchvision, and pydensecrf installations below:
