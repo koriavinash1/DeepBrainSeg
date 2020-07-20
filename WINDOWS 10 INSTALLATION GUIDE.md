@@ -47,7 +47,7 @@ Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segm
 
 ![image](https://user-images.githubusercontent.com/3666405/87859067-24056780-c8f8-11ea-8c70-94e467315e79.png)
 
-9. Gpu accelerated alternative (6) and (7) (Note: [Cuda 9.2 (1.5gb)](https://developer.nvidia.com/cuda-92-download-archive) install is required for below):**
+9. Gpu accelerated alternatives to (6) and (7) (Note: [Cuda 9.2 (1.5gb)](https://developer.nvidia.com/cuda-92-download-archive) install is required for below):**
 
 pip install torch==1.2.0+cu92 torchvision==0.4.0+cu92 -f https://download.pytorch.org/whl/torch_stable.html
 
