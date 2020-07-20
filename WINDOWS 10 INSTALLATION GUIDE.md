@@ -13,7 +13,7 @@ Figure_0: DeepBrainSeg starting up on Windows 10.
 
 ![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference-DeepBrainSegUI-running-on-Windows-10.gif)
 
-Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segmentation takes maybe roughly 1 hour via torch_cpu, on my i76700 intel cpu!!)
+Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segmentation takes ~2 hours via torch_cpu, on my i7 6700 intel cpu. Torch cuda is much faster, with ensemble inference taking only ~12 minutes, on gtx 1060 3gb)
 
 1. Don't run [DeepBrainSeg setup.py](https://github.com/koriavinash1/DeepBrainSeg/blob/master/setup.py) , until step 10. It matters not if you had already ran it, still proceed if you had already done so.
 
@@ -33,6 +33,8 @@ Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segm
 
 6. Install in particular, torch 1.2.0 from the location below, using the command below given python35 path is set:
 
+**Cpu enabled option:**
+
 `python -m pip install https://download.pytorch.org/whl/cpu/torch-1.2.0%2Bcpu-cp35-cp35m-win_amd64.whl`
 
 7. Install (by simply manually copying "**Lib/site packages**" folder to "**Lib/site packages**" in Python35 installation directory), in particular, torchvision 0.4.0 , "[win-64/torchvision-0.4.0-py35_cpu](https://anaconda.org/pytorch/torchvision/0.4.0/download/win-64/torchvision-0.4.0-py35_cpu.tar.bz2)" (crucially, from [page 4 of the anaconda cloud location](https://anaconda.org/pytorch/torchvision/files?page=4)).
@@ -45,7 +47,14 @@ Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segm
 
 ![image](https://user-images.githubusercontent.com/3666405/87859067-24056780-c8f8-11ea-8c70-94e467315e79.png)
 
-9. Test your torch, torchvision, and pydensecrf installations below:
+9. Gpu accelerated alternative (6) and (7) (Note: [Cuda 9.2 (1.5gb)](https://developer.nvidia.com/cuda-92-download-archive) install is required for below):**
+
+pip install torch==1.2.0+cu92 torchvision==0.4.0+cu92 -f https://download.pytorch.org/whl/torch_stable.html
+
+With the gpu option above, segmentation takes ~14 minutes, instead of ~2 hours required when using cpu options in (6) and (7).
+
+
+10. Test your torch, torchvision, and pydensecrf installations below:
 
 
 > import torch
@@ -58,13 +67,13 @@ Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Segm
 > #The above "import pydensecrf.densecrf " test may fail even if the one above succeeds! As advised in (8) torch and torchvision must match. If a "variable_length" issue error pops up, this means that numpy requires updating to the latest version. Typical pip works.
 > 
 
-10. Finally run [DeepBrainSeg setup.py](https://github.com/koriavinash1/DeepBrainSeg/blob/master/setup.py). Install any other missing thing if applicable, using typical python pip.
+11. Finally run [DeepBrainSeg setup.py](https://github.com/koriavinash1/DeepBrainSeg/blob/master/setup.py). Install any other missing thing if applicable, using typical python pip.
 
 You should see DeepBrainSeg installation being resolved below:
 ![image](https://user-images.githubusercontent.com/3666405/87859288-a0e51100-c8f9-11ea-97f6-17b476213dec.png)
 
 
-11. If no errors happen in the test, then it's time to launch the DeepBrainSeg user interface on Windows 10:
+12. If no errors happen in the test, then it's time to launch the DeepBrainSeg user interface on Windows 10:
 
 `
 python DeepBrainSegUI.py #as advised on the main repository or simply run the python file from IDLE35.
