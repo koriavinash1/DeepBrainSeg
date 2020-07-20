@@ -7,13 +7,12 @@ Albeit, the DeepBrainSeg Library does not facilitate straight-forward Windows 10
 
 That said, here is a Windows 10 Guide, by [myself](https://github.com/JordanMicahBennett). If anyone faces any issues, let me know. ([For those curious why God Bennett is commenting from Jordan's profile, I legally changed my name from Jordan to God](https://www.researchgate.net/publication/342328687_Why_I_an_atheist_legally_changed_my_name_to_God)).
 
-
 ![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif)
-Figure_0: DeepBrainSeg starting up on Windows 10.
+**Figure_0**: DeepBrainSeg starting up on Windows 10.
 
 ![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference-DeepBrainSegUI-running-on-Windows-10.gif)
 
-Figure_1: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Ensemble segmentation takes ~2 hours via torch_cpu, on my i7 6700 intel cpu. Torch cuda/gpu on the other hand, is much faster, with ensemble inference taking only ~10 minutes, on my gtx 1060 3gb)
+**Figure_1**: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Ensemble segmentation/inference takes ~2 hours via torch_cpu, on my i7 6700 intel cpu. Torch cuda/gpu on the other hand, is much faster, with ensemble segmentation/inference taking only ~10 minutes, on my gtx 1060 3gb)
 
 1. Don't run [DeepBrainSeg setup.py](https://github.com/koriavinash1/DeepBrainSeg/blob/master/setup.py) , until step 10. It matters not if you had already ran it, still proceed if you had already done so.
 
