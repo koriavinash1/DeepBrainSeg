@@ -137,6 +137,7 @@ class Trainer():
         self.loss = torch.nn.CrossEntropyLoss(weight = weights)
 
         self.start_epoch = 0
+        self.hardmine_every = 10
         self.hardmine_iteration = 0
 
         self.dataRoot = data_root
@@ -160,7 +161,13 @@ class Trainer():
 
         for epochID in range (self.start_epoch, trMaxEpoch):
 
+        	if (epochID % self.hardmine_every) == 0:
+        		self.hardmine_iteration += 1
+        		self.csvPath = GenerateCSV(self.Tir3Dnet, self.dataRoot, logs_root, iteration = self.hardmine_iteration)
+
             #-------------------- SETTINGS: DATASET BUILDERS
+
+            ## TODO: data loader
             np.random.shuffle(TrainVolPaths)
             np.random.shuffle(ValidVolPaths)
             datasetTrain = custom.Generator(imgs = TrainVolPaths[:40000])
@@ -184,7 +191,7 @@ class Trainer():
             				nnClassCount, 
             				self.loss, 
             				trBatchSize)
-            
+
             lossVal, losstensor, wt_dice_score, tc_dice_score, et_dice_score, _cm = self.epochVal (self.Tir3Dnet, 
             																				dataLoaderVal, 
             																				self.optimizer, 
