@@ -136,7 +136,7 @@ def getEdgeEnhancedWeightMap_3D(label, label_ids =[0,1,2,3,4], scale=1, edgescal
 
 
 
-class ImageFolder(Dataset):
+class Generator(Dataset):
     """
     """
 
