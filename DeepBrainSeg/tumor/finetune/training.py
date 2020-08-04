@@ -9,8 +9,30 @@ from ../..helpers.helper import *
 def GenerateCSV(model, dataset_path, logs_root, iteration):
 	model.eval()
 
-	brainRegion = []; C1Region = []; C2Region = []; C3Region = []
-	backgroundRegion = []; path = []; coordinate = []; dice = []
+	brainRegion = []; backgroundRegion = []; 
+	ETRegion = []; TCRegion = []; WTRegion = []
+	ETDice = []; TCDice = []; WTDice = []
+	path = []; coordinate = []; 
+
+
+
+	def __get_whole_tumor__(data):
+		return (data > 0)*(data < 3)
+
+	def __get_tumor_core__(data):
+	    return np.logical_or(data == 1, data == 3)
+
+	def __get_enhancing_tumor__(data):
+	    return data == 3
+
+	def _get_dice_score_(prediction, ground_truth):
+
+	    masks = (__get_whole_tumor__, __get_tumor_core__, __get_enhancing_tumor__)
+	    p     = np.uint8(prediction)
+	    gt    = np.uint8(ground_truth)
+	    wt, tc, et=[2*np.sum(func(p)*func(gt)) / (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
+	    return wt, tc, et
+
 
 	def _GenerateSegmentation_(spath, vol, seg, size = 64, nclasses = 5):
         """
@@ -38,16 +60,16 @@ def GenerateCSV(model, dataset_path, logs_root, iteration):
                         final_prediction[:, x:x + size, y:y + size, z:z + size] = pred[0]
 
                     	# Logs update
-                    	eDice = np.sum(get_dice_score(pred, mask))
+                    	wt, tc, et = np.sum(get_dice_score(pred, mask))
 
                     	coordinate.append((x, y, z))
                     	path.append(spath)
                     	backgroundRegion.append(np.mean(mask == 0))
-                    	C1Region.append(np.mean(mask == 1))
-                    	C2Region.append(np.mean(mask == 2))
-                    	C3Region.append(np.mean(mask == 3))
-                    	brainRegion.append(np.mean(mask == 4))
-                    	dice.append(eDice)
+                    	WTRegion.append(np.mean(__get_whole_tumor__(mask)))
+                    	ETRegion.append(np.mean(__get_enhancing_tumor__(mask)))
+                    	TCRegion.append(np.mean(__get_tumor_core__(mask))
+                    	brainRegion.append(np.mean(mask == 4)))
+                    	ETDice.append(et); WTDice.append(wt); TCDice.append(tc)
 
         final_prediction = convert5class_logitsto_4class(final_prediction)
 
@@ -72,11 +94,13 @@ def GenerateCSV(model, dataset_path, logs_root, iteration):
 
 	dataFrame = pd.DataFrame()
 	dataFrame['path'] = path
-	dataFrame['c1'] = C1Region
-	dataFrame['c2'] = C2Region
-	dataFrame['c3'] = C3Region
-	dataFrame['brain'] = brainRegion
-	dataFrame['dice']  = dice
+	dataFrame['ETRegion'] = ETRegion
+	dataFrame['TCRegion'] = TCRegion
+	dataFrame['WTRegion'] = WTRegion
+	dataFrame['brain']    = brainRegion
+	dataFrame['ETdice']  = ETDice
+	dataFrame['WTdice']  = WTDice
+	dataFrame['TCdice']  = TCDice
 	dataFrame['background'] = backgroundRegion
 	dataFrame['coordinate'] = coordinate
 
