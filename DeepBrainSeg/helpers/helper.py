@@ -160,7 +160,7 @@ def get_dice_score(prediction, ground_truth):
     masks=(get_whole_tumor, get_tumor_core, get_enhancing_tumor)
     p    =np.uint8(prediction)
     gt   =np.uint8(ground_truth)
-    wt,tc,et=[2*np.sum(func(p)*func(gt)) / (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
+    wt, tc, et=[2*np.sum(func(p)*func(gt)) / (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
     return wt, tc, et
 
 
@@ -230,4 +230,22 @@ def combine_mask_prediction(mask, pred):
     mask[mask == 1]   = 2
     mask[pred == 1]   = 1
     mask[pred == 3]   = 3
+    return mask
+
+
+def get_ants_mask(ants_path, t1_path):
+    """
+    We make use of ants framework for generalized skull stripping
+    
+    t1_path: t1 volume path (str)
+    saves the mask in the same location as t1 data directory
+    returns: maskvolume (numpy uint8 type) 
+    """
+    mask_path = os.path.join(os.path.dirname(t1_path), 'mask.nii.gz')
+    os.system(ants_path +'ImageMath 3 '+ mask_path +' Normalize '+ t1_path)
+    os.system(ants_path +'ThresholdImage 3 '+ mask_path +' '+ mask_path +' 0.01 1')
+    os.system(ants_path +'ImageMath 3 '+ mask_path +' MD '+ mask_path +' 1')
+    os.system(ants_path +'ImageMath 3 '+ mask_path +' ME '+ mask_path +' 1')
+    os.system(ants_path +'CopyImageHeaderInformation '+ t1_path+' '+ mask_path +' '+ mask_path +' 1 1 1')
+    mask = np.uint8(nib.load(mask_path).get_data())
     return mask
