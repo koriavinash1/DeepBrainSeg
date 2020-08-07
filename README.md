@@ -58,7 +58,7 @@ If you use DeepBrainSeg, please cite our work:
 
 ## Results for Segmentation
 
-![Results](./imgs/res.png)
+![Results](./imgs/results.png)
 
 
 ## UI
