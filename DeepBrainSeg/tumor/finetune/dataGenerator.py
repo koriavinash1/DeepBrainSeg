@@ -215,12 +215,18 @@ class Generator(Dataset):
 
             import pdb
             pdb.set_trace()
-            vol, seg, _ = nii_loader(subject['path'].values)
-            data, mask = get_patch(vol, seg, coordinate = subject['coordinate'].values, size = self.patch_size)
+            spath = {}; subject_idx = subject['path'].split('/')[-1]
+            spath['flair'] = os.path.join(subject_path, subject_idx + '_flair.nii.gz')
+            spath['t1ce']  = os.path.join(subject_path, subject_idx + '_t1ce.nii.gz')
+            spath['seg']   = os.path.join(subject_path, subject_idx + '_seg.nii.gz')
+            spath['t1']    = os.path.join(subject_path, subject_idx + '_t1.nii.gz')
+            spath['t2']    = os.path.join(subject_path, subject_idx + '_t2.nii.gz')
+            spath['mask']  = os.path.join(dataset_path, 'mask.nii.gz')
+            coordinate = [int(co) for co in subject['coordinate'].split(',')]
+            vol, seg, _ = nii_loader(spath)
+            data, mask = get_patch(vol, seg, coordinate = coordinate, size = self.patch_size)
             X.append(data)
             y.append(mask)
             edgeMap.append(getEdgeEnhancedWeightMap_3D(mask))
 
         return X, y, edgeMap
-
-

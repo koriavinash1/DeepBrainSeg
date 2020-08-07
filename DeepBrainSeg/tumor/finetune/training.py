@@ -1,14 +1,30 @@
-from glob import glob
-import panda as pd
+import os
 import numpy as np
+import time
+import sys
+
 import torch
-from tqdm import tqdm
+import torch.nn as nn
+import torch.backends.cudnn as cudnn
+import torchvision
+import torch.optim as optim
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.utils.data import DataLoader
+
 from torch.autograd import Variable
-from torchvision import transforms
+import torch.nn.functional as F
+import torchnet as tnt
+import pandas as pd
+import random
+
+from tqdm import tqdm
 
 from dataGenerator import nii_loader, get_patch, Generator
-from ..models.modelTir3D import FCDenseNet57
-from ../..helpers.helper import *
+import sys
+sys.path.append('..')
+from models.modelTir3D import FCDenseNet57
+sys.path.append('../..')
+from helpers.helper import *
 
 
 def __get_whole_tumor__(data):
@@ -25,8 +41,12 @@ def _get_dice_score_(prediction, ground_truth):
     masks = (__get_whole_tumor__, __get_tumor_core__, __get_enhancing_tumor__)
     p     = np.uint8(prediction)
     gt    = np.uint8(ground_truth)
-    wt, tc, et=[2*np.sum(func(p)*func(gt)) / (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
+    wt, tc, et = [2*np.sum(func(p)*func(gt)) / (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
     return wt, tc, et
+
+
+nclasses = 5
+confusion_meter = tnt.meter.ConfusionMeter(nclasses, normalized=True)
 
 
 class Trainer():
@@ -41,7 +61,7 @@ class Trainer():
 
         map_location = device
 
-        self.T3Dnclasses = 5
+        self.T3Dnclasses = nclasses
         self.Tir3Dnet = FCDenseNet57(self.T3Dnclasses)
         ckpt = torch.load(ckpt_tir3D, map_location=map_location)
         self.Tir3Dnet.load_state_dict(ckpt['state_dict'])
@@ -202,9 +222,9 @@ class Trainer():
         with torch.set_grad_enabled(phase == 'train'):
             for batchID, (data, seg, weight_map) in tqdm(enumerate (dataLoader)):
                 
-                target = seg.long().squeeze(0)
-                data = data.float().squeeze(0)
-                weight_map = weight_map.float().squeeze(0) / torch.max(weight_map)
+                target = torch.cat(seg).long().squeeze(0)
+                data = torch.cat(data).float().squeeze(0)
+                # weight_map = torch.cat(weight_map).float().squeeze(0) / torch.max(weight_map)
 
                 varInput  = data.to(device)
                 varTarget = target.to(device)
@@ -244,9 +264,9 @@ class Trainer():
         with torch.no_grad():
             for i, (data, seg, weight_map, _) in enumerate (dataLoader):
 
-                target = seg.long().squeeze(0)
-                data = data.float().squeeze(0)
-                # weight_map = weight_map.float().squeeze(0) / torch.max(weight_map)
+                target = torch.cat(seg).long().squeeze(0)
+                data = torch.cat(data).float().squeeze(0)
+                # weight_map = torch.cat(weight_map).float().squeeze(0) / torch.max(weight_map)
 
                 varInput  = data.to(device)
                 varTarget = target.to(device)
@@ -282,3 +302,15 @@ class Trainer():
             losstensorMean = losstensorMean / lossValNorm
 
         return outLoss, losstensorMean, wt_dice_score, tc_dice_score, et_dice_score, confusion_meter
+
+
+
+if __name__ == "__main__":
+    trainer = Trainer('../../../../Logs/csv/training.csv',
+                        '../../../../Logs/csv/validation.csv',
+                        '../../../../MICCAI_BraTS2020_TrainingData',
+                        '../../../../Logs')
+    timestampTime = time.strftime("%H%M%S")
+    timestampDate = time.strftime("%d%m%Y")
+    timestampLaunch = timestampDate + '-' + timestampTime
+    trainer.train(nnClassCount = nclasses, trBatchSize = 8, trMaxEpoch = 80, timestampLaunch, checkpoint=None)
