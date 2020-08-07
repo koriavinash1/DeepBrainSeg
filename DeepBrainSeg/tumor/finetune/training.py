@@ -25,7 +25,8 @@ sys.path.append('..')
 from models.modelTir3D import FCDenseNet57
 sys.path.append('../..')
 from helpers.helper import *
-
+from os.path import expanduser
+home = expanduser("~")
 
 def __get_whole_tumor__(data):
     return (data > 0)*(data < 4)
@@ -47,6 +48,38 @@ def _get_dice_score_(prediction, ground_truth):
 
 nclasses = 5
 confusion_meter = tnt.meter.ConfusionMeter(nclasses, normalized=True)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+def to_one_hot(y, n_dims=None):
+    """ Take integer y (tensor or variable) with n dims and convert it to 1-hot representation with n+1 dims. """
+    y_tensor  = y.data if isinstance(y, Variable) else y
+    y_tensor  = y_tensor.type(torch.LongTensor).view(-1, 1)
+    n_dims    = n_dims if n_dims is not None else int(torch.max(y_tensor)) + 1
+    y_one_hot = torch.zeros(y_tensor.size()[0], n_dims).scatter_(1, y_tensor, 1)
+    y_one_hot = y_one_hot.view(*y.shape, -1)
+    y_one_hot = y_one_hot.transpose(-1, 1).transpose(-1, 2)#.transpose(-1, 3) 
+    return Variable(y_one_hot) if isinstance(y, Variable) else y_one_hot
+
+
+
+def dice_loss(input,target):
+    """
+    input is a torch variable of size BatchxnclassesxHxW representing log probabilities for each class
+    target is of the groundtruth, shoud have same size as the input
+    """
+    # print (target.size())
+    target = to_one_hot(target, n_dims=nclasses).to(device)
+    # print (target.size(), input.size())
+
+    assert input.size() == target.size(), "Input sizes must be equal."
+    assert input.dim() == 5, "Input must be a 4D Tensor."
+
+    probs = F.softmax(input)
+
+    num   = (probs*target).sum() + 1e-3
+    den   = probs.sum() + target.sum() + 1e-3
+    dice  = 2.*(num/den)
+    return 1. - dice
 
 
 class Trainer():
@@ -56,21 +89,22 @@ class Trainer():
                     data_root = None,
                     logs_root = None):
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # device = "cpu"
 
         map_location = device
 
         self.T3Dnclasses = nclasses
         self.Tir3Dnet = FCDenseNet57(self.T3Dnclasses)
+        ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
         ckpt = torch.load(ckpt_tir3D, map_location=map_location)
         self.Tir3Dnet.load_state_dict(ckpt['state_dict'])
         print ("================================== TIRNET3D Loaded =================================")
         self.Tir3Dnet = self.Tir3Dnet.to(device)
 
         #-------------------- SETTINGS: OPTIMIZER & SCHEDULER
-        self.optimizer = optim.Adam (model.parameters(), lr=0.0001, betas=(0.9, 0.999), eps=1e-05, weight_decay=1e-5) 
-        self.scheduler = ReduceLROnPlateau(optimizer, factor = 0.1, patience = 5, mode = 'min')
+        self.optimizer = optim.Adam (self.Tir3Dnet.parameters(), 
+                                     lr=0.0001, betas=(0.9, 0.999), eps=1e-05, weight_decay=1e-5) 
+        self.scheduler = ReduceLROnPlateau(self.optimizer, factor = 0.1, patience = 5, mode = 'min')
         self.optimizer.load_state_dict(ckpt['optimizer'])
         
         
@@ -313,4 +347,8 @@ if __name__ == "__main__":
     timestampTime = time.strftime("%H%M%S")
     timestampDate = time.strftime("%d%m%Y")
     timestampLaunch = timestampDate + '-' + timestampTime
-    trainer.train(nnClassCount = nclasses, trBatchSize = 8, trMaxEpoch = 80, timestampLaunch, checkpoint=None)
+    trainer.train(nnClassCount = nclasses, 
+                  trBatchSize = 4, 
+                  trMaxEpoch = 80, 
+                  timestampLaunch = timestampLaunch, 
+                  checkpoint=None)

@@ -205,7 +205,6 @@ class Generator(Dataset):
 
             for i, key in enumerate(self.classinfo.keys()):
                 if (bi%len(self.classinfo)) == i:
-                    print(key)
                     if p < self.classinfo[key]['hardmine_ratio']:
                         subject = self.classinfo[key]['hardsubjects'].iloc[int(index*self.batch_size//s + bi) % len(self.classinfo[key]['hardsubjects'])]
                     subject = self.classinfo[key]['subjects'].iloc[int(index*self.batch_size//s + bi) % len(self.classinfo[key]['subjects'])]
