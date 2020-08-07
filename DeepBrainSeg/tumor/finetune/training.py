@@ -256,7 +256,7 @@ class Trainer():
                 varOutput = model(varInput)
                 _, preds = torch.max(varOutput,1)
 
-                wt_, tc_, et_ = self.get_dice_score(varOutput, varTarget)
+                wt_, tc_, et_ = _get_dice_score_(varOutput, varTarget)
                 wt_dice_score += wt_
                 tc_dice_score += tc_
                 et_dice_score += et_
