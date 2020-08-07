@@ -139,7 +139,7 @@ class Generator(Dataset):
 
     def __init__(self, csv_path, 
                  patch_size = 64,
-                 hardmining_every = 10,
+                 hardmine_every = 10,
                  batch_size = 64,
                  iteration = 1,
                  loader = nii_loader):
@@ -151,34 +151,30 @@ class Generator(Dataset):
         self.batch_size = batch_size
         self.patch_size = patch_size
         self.valid_patches = self.csv[self.csv['brain'] > 0]
-        self.ratio = iteration*1./hardmining_every
-
+        self.ratio = iteration*1./hardmine_every	
         self.classinfo = {
             'ET':{
                 'hardmine_ratio': self.ratio,
                 'hardmine_threshold': 1.0 - self.ratio,
-                'subjects': self.valid_patches[self.valid_patches['ETRegion'] > 0]
-                'hardsubjects': self.valid_patches[(self.valid_patches['ETRegion'] > 0) *\
-                                                     (self.valid_patches['ETDice'] < 1.0 - self.ratio)]
+                'subjects': self.valid_patches[self.valid_patches['ETRegion'] > 0],
+                'hardsubjects': self.valid_patches[(self.valid_patches['ETRegion'] > 0) * (self.valid_patches['ETdice'] < 1.0 - self.ratio)]
             },
             'TC' :{
                 'hardmine_ratio': self.ratio,
-                'hardmine_threshold': 1.0 - self.ratio
-                'subjects': self.valid_patches[self.valid_patches['TCRegion'] > 0]
-                'hardsubjects': self.valid_patches[(self.valid_patches['TCRegion'] > 0) *\
-                                                     (self.valid_patches['TCDice'] < 1.0 - self.ratio)]
+                'hardmine_threshold': 1.0 - self.ratio,
+                'subjects': self.valid_patches[self.valid_patches['TCRegion'] > 0],
+                'hardsubjects': self.valid_patches[(self.valid_patches['TCRegion'] > 0) * (self.valid_patches['TCdice'] < 1.0 - self.ratio)]
             },
             'WT' :{
                 'hardmine_ratio': self.ratio,
-                'hardmine_threshold': 1.0 - self.ratio
-                'subjects': self.valid_patches[self.valid_patches['WTRegion'] > 0]
-                'hardsubjects': self.valid_patches[(self.valid_patches['WTRegion'] > 0) *\
-                                                     (self.valid_patches['WTDice'] < 1.0 - self.ratio)]
+                'hardmine_threshold': 1.0 - self.ratio,
+                'subjects': self.valid_patches[self.valid_patches['WTRegion'] > 0],
+                'hardsubjects': self.valid_patches[(self.valid_patches['WTRegion'] > 0) * (self.valid_patches['WTdice'] < 1.0 - self.ratio)]
             },
             'Brain': {
                 'hardmine_ratio': self.ratio,
-                'hardmine_threshold': 1.0 - self.ratio
-                'subjects': self.valid_patches
+                'hardmine_threshold': 1.0 - self.ratio,
+                'subjects': self.valid_patches,
                 'hardsubjects': self.valid_patches[(self.valid_patches['brain'] < 1.0 - self.ratio)]
             }
         }
@@ -190,6 +186,7 @@ class Generator(Dataset):
     def __getitem__(self, index):
         'Generate one batch of data'
         # Generate indexes of the batch
+
         X, y, Emap = self.__data_generation(index)
         return X, y, Emap
 
@@ -208,25 +205,42 @@ class Generator(Dataset):
 
             for i, key in enumerate(self.classinfo.keys()):
                 if (bi%len(self.classinfo)) == i:
+                    print(key)
                     if p < self.classinfo[key]['hardmine_ratio']:
-                        subject = self.classinfo[key]['hardsubjects'][int(index*self.batch_size//s + bi) % len(self.classinfo[key]['hardsubjects'])]
-                    subject = self.classinfo[key]['subjects'][int(index*self.batch_size//s + bi) % len(self.classinfo[key]['subjects'])]
+                        subject = self.classinfo[key]['hardsubjects'].iloc[int(index*self.batch_size//s + bi) % len(self.classinfo[key]['hardsubjects'])]
+                    subject = self.classinfo[key]['subjects'].iloc[int(index*self.batch_size//s + bi) % len(self.classinfo[key]['subjects'])]
                     break
 
-            import pdb
-            pdb.set_trace()
-            spath = {}; subject_idx = subject['path'].split('/')[-1]
+
+            spath = {}; subject_idx = subject['path'].split('/')[-1]; subject_path = subject['path']
             spath['flair'] = os.path.join(subject_path, subject_idx + '_flair.nii.gz')
             spath['t1ce']  = os.path.join(subject_path, subject_idx + '_t1ce.nii.gz')
             spath['seg']   = os.path.join(subject_path, subject_idx + '_seg.nii.gz')
             spath['t1']    = os.path.join(subject_path, subject_idx + '_t1.nii.gz')
             spath['t2']    = os.path.join(subject_path, subject_idx + '_t2.nii.gz')
-            spath['mask']  = os.path.join(dataset_path, 'mask.nii.gz')
-            coordinate = [int(co) for co in subject['coordinate'].split(',')]
+
+            spath['mask']  = os.path.join(subject_path, 'mask.nii.gz')
+            coordinate = [int(co) for co in subject['coordinate'][1:-1].split(', ')]
             vol, seg, _ = nii_loader(spath)
             data, mask = get_patch(vol, seg, coordinate = coordinate, size = self.patch_size)
+
             X.append(data)
             y.append(mask)
-            edgeMap.append(getEdgeEnhancedWeightMap_3D(mask))
+            # edgeMap.append(getEdgeEnhancedWeightMap_3D(mask))
 
         return X, y, edgeMap
+
+
+if __name__ == '__main__':
+    csv_path = '../../../../Logs/csv/training.csv'
+    datasetTrain = Generator(csv_path = csv_path,
+                                                batch_size = 8,
+                                                hardmine_every = 10,
+                                                iteration = 1)
+    from torch.utils.data import DataLoader
+    dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=1, shuffle=True,  num_workers=1, pin_memory=True)
+    for i, (x,y,w) in enumerate(dataLoaderTrain):
+        y = torch.cat(y).long().squeeze(0)
+        x = torch.cat(x).float().squeeze(0)
+        # w = torch.cat(w).float().squeeze(0) / torch.max(w)
+        print(i, x.shape, y.shape) #, w.shape)

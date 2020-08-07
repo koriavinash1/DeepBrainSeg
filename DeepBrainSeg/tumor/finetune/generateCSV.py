@@ -109,7 +109,7 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
             spath['seg']   = os.path.join(subject_path, subject + '_seg.nii.gz')
             spath['t1']    = os.path.join(subject_path, subject + '_t1.nii.gz')
             spath['t2']    = os.path.join(subject_path, subject + '_t2.nii.gz')
-            spath['mask']  = os.path.join(dataset_path, 'mask.nii.gz')
+            spath['mask']  = os.path.join(subject_path, 'mask.nii.gz')
 
             vol, seg, affine = nii_loader(spath)
             predictions = _GenerateSegmentation_(subject_path, vol, seg, size = 64, nclasses = 5)
