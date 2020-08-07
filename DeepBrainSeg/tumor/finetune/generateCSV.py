@@ -33,7 +33,7 @@ def _get_dice_score_(prediction, ground_truth):
     return wt, tc, et
 
 
-def GenerateCSV(model, dataset_path, logs_root):
+def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
     model.eval()
 
     brainRegion = []; backgroundRegion = []; 
@@ -87,12 +87,19 @@ def GenerateCSV(model, dataset_path, logs_root):
         return final_prediction
 
 
-    subjects = [sub for sub in os.listdir(dataset_path) if not os.path.isfile(os.path.join(dataset_path, sub))]
-    print (len(subjects))
-    training_subjects = subjects[:int(.8*len(subjects))]
-    validation_subjects = subjects[int(.8*len(subjects)):]
+    if iteration == 0:
+        subjects = [sub for sub in os.listdir(dataset_path) if not os.path.isfile(os.path.join(dataset_path, sub))]
+        print (len(subjects))
+        training_subjects = subjects[:int(.8*len(subjects))]
+        validation_subjects = subjects[int(.8*len(subjects)):]
+        data_splits = [training_subjects, validation_subjects]
 
-    for i, subjects in enumerate([training_subjects, validation_subjects]):
+    else :
+        training_subjects = pd.read_csv('../../../../Logs/csv/training.csv')['path'].values
+        training_subjects = [sub.split('/')[-1] for sub in training_subjects]
+        data_splits = [training_subjects]
+
+    for i, subjects in enumerate(data_splits):
         for subject in tqdm(subjects):
             print(subject)
             spath = {}
@@ -106,7 +113,7 @@ def GenerateCSV(model, dataset_path, logs_root):
 
             vol, seg, affine = nii_loader(spath)
             predictions = _GenerateSegmentation_(subject_path, vol, seg, size = 64, nclasses = 5)
-            save_volume(predictions, affine, os.path.join(subject_path, 'DeepBrainSeg_Prediction'))
+            save_volume(predictions, affine, os.path.join(subject_path, 'DeepBrainSeg_Prediction_iteration_{}'.format(iteration)))
 
 
         dataFrame = pd.DataFrame()
@@ -115,15 +122,19 @@ def GenerateCSV(model, dataset_path, logs_root):
         dataFrame['TCRegion'] = TCRegion
         dataFrame['WTRegion'] = WTRegion
         dataFrame['brain']    = brainRegion
-        dataFrame['ETdice']  = ETDice
-        dataFrame['WTdice']  = WTDice
-        dataFrame['TCdice']  = TCDice
+        dataFrame['ETdice'] = ETDice
+        dataFrame['WTdice'] = WTDice
+        dataFrame['TCdice'] = TCDice
         dataFrame['background'] = backgroundRegion
         dataFrame['coordinate'] = coordinate
         
-        os.makedirs(os.path.join(logs_root, 'csv'), exist_ok=True)
-        if i == 0: save_path = os.path.join(logs_root, 'csv/training.csv')
-        else: save_path = os.path.join(logs_root, 'csv/validation.csv')
+        if iteration == 0: csv_root = os.path.join(logs_root, 'csv')
+        else: csv_root = os.path.join(logs_root, 'csv/iteration_{}'.format(iteration))
+
+        os.makedirs(csv_root, exist_ok=True)
+
+        if i == 0: save_path = os.path.join(csv_root, 'training.csv')
+        else: save_path = os.path.join(csv_root, 'validation.csv')
 
         dataFrame.to_csv(save_path)
     return save_path

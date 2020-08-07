@@ -139,52 +139,88 @@ class Generator(Dataset):
 
     def __init__(self, csv_path, 
                  patch_size = 64,
-                 hardmining = False,
-        		 transform = None, 
-        		 target_transform = None,
+                 hardmining_every = 10,
+                 batch_size = 64,
+                 iteration = 1,
                  loader = nii_loader):
 
-        self.csv = pd.read_csv(csv_path)
-        self.transform = transform
-        self.target_transform = target_transform
+        self.nchannels = 4
+        self.nclasses = 5
         self.loader = loader
+        self.csv = pd.read_csv(csv_path)
+        self.batch_size = batch_size
+        self.patch_size = patch_size
+        self.valid_patches = self.csv[self.csv['brain'] > 0]
+        self.ratio = iteration*1./hardmining_every
 
-    def __getitem__(self, index):
-        """
-        """
-        patch = self.csv[index].values
-        path = patch[0] 
-        coordinate = patch[1]
-        dice = patch[2]
-        data, segmentation = self.loader(path, coordinate)
-        data = torch.from_numpy(data).float()
-        
-
-        if self.transform is not None:
-            img = self.transform(img)
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-
-        weight_map = getEdgeEnhancedWeightMap_3D(segmentation)
-        return data, segmentation, weight_map, path
+        self.classinfo = {
+            'ET':{
+                'hardmine_ratio': self.ratio,
+                'hardmine_threshold': 1.0 - self.ratio,
+                'subjects': self.valid_patches[self.valid_patches['ETRegion'] > 0]
+                'hardsubjects': self.valid_patches[(self.valid_patches['ETRegion'] > 0) *\
+                                                     (self.valid_patches['ETDice'] < 1.0 - self.ratio)]
+            },
+            'TC' :{
+                'hardmine_ratio': self.ratio,
+                'hardmine_threshold': 1.0 - self.ratio
+                'subjects': self.valid_patches[self.valid_patches['TCRegion'] > 0]
+                'hardsubjects': self.valid_patches[(self.valid_patches['TCRegion'] > 0) *\
+                                                     (self.valid_patches['TCDice'] < 1.0 - self.ratio)]
+            },
+            'WT' :{
+                'hardmine_ratio': self.ratio,
+                'hardmine_threshold': 1.0 - self.ratio
+                'subjects': self.valid_patches[self.valid_patches['WTRegion'] > 0]
+                'hardsubjects': self.valid_patches[(self.valid_patches['WTRegion'] > 0) *\
+                                                     (self.valid_patches['WTDice'] < 1.0 - self.ratio)]
+            },
+            'Brain': {
+                'hardmine_ratio': self.ratio,
+                'hardmine_threshold': 1.0 - self.ratio
+                'subjects': self.valid_patches
+                'hardsubjects': self.valid_patches[(self.valid_patches['brain'] < 1.0 - self.ratio)]
+            }
+        }
 
     def __len__(self):
-        return len(self.csv)
+        return len(self.valid_patches)//self.batch_size
 
 
-def getDataPaths(path):
-    data = pd.read_csv(path)
-    imgpaths = data['Paths'].as_matrix()
-    np.random.shuffle(imgpaths)
-    return imgpaths
+    def __getitem__(self, index):
+        'Generate one batch of data'
+        # Generate indexes of the batch
+        X, y, Emap = self.__data_generation(index)
+        return X, y, Emap
+
+  
+    def __data_generation(self, index):
+        'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
+        # Initialization
+        self.image_size = (self.patch_size, self.patch_size, self.patch_size)
+        X = []; y = []; edgeMap = []
 
 
-if __name__== '__main__':
+        p = np.random.uniform()
 
-    csv='./training_patch_info.csv'
-    a= getDataPaths(csv)
+        s = len(self.classinfo.keys())
+        for bi in range(self.batch_size):
 
-    dl=ImageFolder(a)
-    for i, (x,z,_) in enumerate (dl):
-        print ('min',np.min(z),'max',np.max(z), _)
-        # print('size',z.long().size())
+            for i, key in enumerate(self.classinfo.keys()):
+                if (bi%len(self.classinfo)) == i:
+                    if p < self.classinfo[key]['hardmine_ratio']:
+                        subject = self.classinfo[key]['hardsubjects'][int(index*self.batch_size//s + bi) % len(self.classinfo[key]['hardsubjects'])]
+                    subject = self.classinfo[key]['subjects'][int(index*self.batch_size//s + bi) % len(self.classinfo[key]['subjects'])]
+                    break
+
+            import pdb
+            pdb.set_trace()
+            vol, seg, _ = nii_loader(subject['path'].values)
+            data, mask = get_patch(vol, seg, coordinate = subject['coordinate'].values, size = self.patch_size)
+            X.append(data)
+            y.append(mask)
+            edgeMap.append(getEdgeEnhancedWeightMap_3D(mask))
+
+        return X, y, edgeMap
+
+

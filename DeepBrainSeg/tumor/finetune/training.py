@@ -29,94 +29,10 @@ def _get_dice_score_(prediction, ground_truth):
     return wt, tc, et
 
 
-def GenerateCSV(model, dataset_path, logs_root, iteration):
-    model.eval()
-
-    brainRegion = []; backgroundRegion = []; 
-    ETRegion = []; TCRegion = []; WTRegion = []
-    ETDice = []; TCDice = []; WTDice = []
-    path = []; coordinate = []; 
-
-
-    def _GenerateSegmentation_(spath, vol, seg, size = 64, nclasses = 5):
-        """
-        output of 3D tiramisu model (tir3Dnet)
-
-        mask = numpy array output of ABLnet 
-        N = patch size during inference
-        """
-
-        shape = vol['t1'].shape # to exclude batch_size
-        final_prediction = np.zeros((nclasses, shape[0], shape[1], shape[2]))
-        x_min, x_max, y_min, y_max, z_min, z_max = 0, shape[0], 0, shape[1], 0, shape[2]
-        x_min, x_max, y_min, y_max, z_min, z_max = x_min, min(shape[0] - size, x_max), y_min, min(shape[1] - size, y_max), z_min, min(shape[2] - size, z_max)
-
-        with torch.no_grad():
-            for x in tqdm(range(x_min, x_max, size//2)):
-                for y in range(y_min, y_max, size//2):
-                    for z in range(z_min, z_max, size//2):
-
-                        data, mask = get_patch(vol, seg, coordinate = (x, y, z), size = size)
-                        data = Variable(torch.from_numpy(data)).to(self.device).float()
-                        pred = torch.nn.functional.softmax(model(data).detach().cpu())
-                        pred = pred.data.numpy()
-
-                        final_prediction[:, x:x + size, y:y + size, z:z + size] = pred[0]
-
-                        # Logs update
-                        wt, tc, et = np.sum(get_dice_score(pred, mask))
-
-                        coordinate.append((x, y, z))
-                        path.append(spath)
-                        backgroundRegion.append(np.mean(mask == 0))
-                        WTRegion.append(np.mean(__get_whole_tumor__(mask)))
-                        ETRegion.append(np.mean(__get_enhancing_tumor__(mask)))
-                        TCRegion.append(np.mean(__get_tumor_core__(mask))
-                        brainRegion.append(np.mean(mask == 4)))
-                        ETDice.append(et); WTDice.append(wt); TCDice.append(tc)
-
-        final_prediction = convert5class_logitsto_4class(final_prediction)
-
-        return final_prediction
-
-
-    subjects = os.listdir(dataset_path)
-    spath = {}
-    for subject in subjects:
-        subject_path = os.path.join(dataset_path, subject)
-        spath['flair'] = os.path.join(subject_path, subject + '_flair.nii.gz')
-        spath['t1ce']  = os.path.join(subject_path, subject + '_t1ce.nii.gz')
-        spath['seg']   = os.path.join(subject_path, subject + '_seg.nii.gz')
-        spath['t1']    = os.path.join(subject_path, subject + '_t1.nii.gz')
-        spath['t2']    = os.path.join(subject_path, subject + '_t2.nii.gz')
-        spath['mask']  = os.path.join(dataset_path, 'mask.nii.gz')
-
-        vol, seg, affine = nii_loader(spath)
-        predictions = _GenerateSegmentation_(subject_path, vol, seg, size = 64, nclasses = 5)
-        save_volume(predictions, affine, os.path.join(subject_path, 'DeepBrainSeg_Prediction'))
-
-
-    dataFrame = pd.DataFrame()
-    dataFrame['path'] = path
-    dataFrame['ETRegion'] = ETRegion
-    dataFrame['TCRegion'] = TCRegion
-    dataFrame['WTRegion'] = WTRegion
-    dataFrame['brain']    = brainRegion
-    dataFrame['ETdice']  = ETDice
-    dataFrame['WTdice']  = WTDice
-    dataFrame['TCdice']  = TCDice
-    dataFrame['background'] = backgroundRegion
-    dataFrame['coordinate'] = coordinate
-
-    save_path = os.path.join(logs_root, 'csv/iteration_{}.csv'.format(iteration))
-    pd.to_csv(dataFrame, save_path)
-    return save_path
-
-
-
 class Trainer():
 
-    def __init__(self, csv_path = None, 
+    def __init__(self, Traincsv_path = None, 
+                    Validcsv_path = None,
                     data_root = None,
                     logs_root = None):
 
@@ -147,10 +63,9 @@ class Trainer():
         self.hardmine_iteration = 0
 
         self.dataRoot = data_root
-        self.csv_path = csv_path
+        self.Traincsv_path = Traincsv_path
+        self.Validcsv_path = Validcsv_path
 
-        if not csv_path:
-            self.csvPath = GenerateCSV(self.Tir3Dnet, self.dataRoot, logs_root, iteration = self.hardmine_iteration)
 
     def train(self, nnClassCount, trBatchSize, trMaxEpoch, timestampLaunch, checkpoint):
 
@@ -167,20 +82,23 @@ class Trainer():
 
         for epochID in range (self.start_epoch, trMaxEpoch):
 
-            if (epochID % self.hardmine_every) == 0:
+            if (epochID % self.hardmine_every) == (self.hardmine_every -1):
                 self.hardmine_iteration += 1
-                self.csvPath = GenerateCSV(self.Tir3Dnet, self.dataRoot, logs_root, iteration = self.hardmine_iteration)
+                self.Traincsv_path = GenerateCSV(self.Tir3Dnet, self.dataRoot, logs_root, iteration = self.hardmine_iteration)
 
             #-------------------- SETTINGS: DATASET BUILDERS
 
-            ## TODO: data loader
-            np.random.shuffle(TrainVolPaths)
-            np.random.shuffle(ValidVolPaths)
-            datasetTrain = custom.Generator(imgs = TrainVolPaths[:40000])
-            datasetVal =   custom.Generator(imgs = ValidVolPaths[:2500])
+            datasetTrain = Generator(csv_path = self.Traincsv_path,
+                                                batch_size = trBatchSize,
+                                                hardmine_every = self.hardmine_every,
+                                                iteration = self.hardmine_iteration)
+            datasetVal  =   Generator(csv_path = self.Validcsv_path,
+                                                batch_size = trBatchSize,
+                                                hardmine_every = self.hardmine_every,
+                                                iteration = 0)
 
-            dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=trBatchSize, shuffle=True,  num_workers=8, pin_memory=False)
-            dataLoaderVal = DataLoader(dataset=datasetVal, batch_size=trBatchSize, shuffle=True, num_workers=8, pin_memory=False)
+            dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=1, shuffle=True,  num_workers=8, pin_memory=False)
+            dataLoaderVal  = DataLoader(dataset=datasetVal, batch_size=1, shuffle=True, num_workers=8, pin_memory=False)
 
 
             timestampTime = time.strftime("%H%M%S")
@@ -282,18 +200,18 @@ class Trainer():
 
         phase='train'
         with torch.set_grad_enabled(phase == 'train'):
-            for batchID, (high_res, seg, weight_map, _) in tqdm(enumerate (dataLoader)):
+            for batchID, (data, seg, weight_map) in tqdm(enumerate (dataLoader)):
                 
-                target = seg.long()
-                high_res = high_res.float()
-                # weight_map = weight_map.float() / torch.max(weight_map)
+                target = seg.long().squeeze(0)
+                data = data.float().squeeze(0)
+                weight_map = weight_map.float().squeeze(0) / torch.max(weight_map)
 
-                varInputHigh = high_res.to(device)
-                varTarget    = target.to(device)
-                varMap       = weight_map.to(device)
-                # print (varInputHigh.size(), varTarget.size())
+                varInput  = data.to(device)
+                varTarget = target.to(device)
+                # varMap    = weight_map.to(device)
+                # print (varInput.size(), varTarget.size())
 
-                varOutput = model(varInputHigh)
+                varOutput = model(varInput)
                 
                 cross_entropy_lossvalue = loss(varOutput, varTarget)
 
@@ -324,19 +242,18 @@ class Trainer():
 
         wt_dice_score, tc_dice_score, et_dice_score = 0.0, 0.0, 0.0
         with torch.no_grad():
-            for i, (high_res, seg, weight_map, _) in enumerate (dataLoader):
+            for i, (data, seg, weight_map, _) in enumerate (dataLoader):
 
-                # print (_)
-                target = seg.long()
-                high_res = high_res.float()
-                # weight_map = weight_map.float()/ torch.max(weight_map)
+                target = seg.long().squeeze(0)
+                data = data.float().squeeze(0)
+                # weight_map = weight_map.float().squeeze(0) / torch.max(weight_map)
 
-                varInputHigh = high_res.to(device)
-                varTarget    = target.to(device)
-                varMap       = weight_map.to(device)
-                # print (varInputHigh.size(), varTarget.size())
+                varInput  = data.to(device)
+                varTarget = target.to(device)
+                # varMap    = weight_map.to(device)
+                # print (varInput.size(), varTarget.size())
 
-                varOutput = model(varInputHigh)
+                varOutput = model(varInput)
                 _, preds = torch.max(varOutput,1)
 
                 wt_, tc_, et_ = self.get_dice_score(varOutput, varTarget)
