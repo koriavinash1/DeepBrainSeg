@@ -1,15 +1,19 @@
 from glob import glob
-import panda as pd
+import pandas as pd
 import numpy as np
 import torch
 from tqdm import tqdm
 from torch.autograd import Variable
 from torchvision import transforms
-
+import os
 from dataGenerator import nii_loader, get_patch, Generator
-from ..models.modelTir3D import FCDenseNet57
-from ../..helpers.helper import *
+import sys
+sys.path.append('..')
+from models.modelTir3D import FCDenseNet57
+sys.path.append('../..')
+from helpers.helper import *
 
+from tqdm import tqdm
 
 def __get_whole_tumor__(data):
     return (data > 0)*(data < 4)
@@ -56,35 +60,41 @@ def GenerateCSV(model, dataset_path, logs_root):
                     for z in range(z_min, z_max, size//2):
 
                         data, mask = get_patch(vol, seg, coordinate = (x, y, z), size = size)
-                        data = Variable(torch.from_numpy(data)).to(self.device).float()
+                        data = Variable(torch.from_numpy(data).unsqueeze(0)).to(device).float()
                         pred = torch.nn.functional.softmax(model(data).detach().cpu())
                         pred = pred.data.numpy()
 
                         final_prediction[:, x:x + size, y:y + size, z:z + size] = pred[0]
 
                         # Logs update
+                        pred = np.argmax(pred[0], axis=0)
                         wt, tc, et = _get_dice_score_(pred, mask)
-
+                        # print(np.unique(pred), np.unique(mask), pred.shape, mask.shape)
                         coordinate.append((x, y, z))
                         path.append(spath)
                         backgroundRegion.append(np.mean(mask == 0))
                         WTRegion.append(np.mean(__get_whole_tumor__(mask)))
                         ETRegion.append(np.mean(__get_enhancing_tumor__(mask)))
-                        TCRegion.append(np.mean(__get_tumor_core__(mask))
-                        brainRegion.append(np.mean(mask == 4)))
+                        TCRegion.append(np.mean(__get_tumor_core__(mask)))
+                        brainRegion.append(np.mean(mask > 0))
                         ETDice.append(et); WTDice.append(wt); TCDice.append(tc)
+                        
+                        # print(ETDice[-1], WTDice[-1], TCDice[-1], WTRegion[-1], ETRegion[-1])
 
         final_prediction = convert5class_logitsto_4class(final_prediction)
+        final_prediction = np.argmax(final_prediction, axis=0).reshape((shape[0], shape[1],shape[2]))
 
         return final_prediction
 
 
-    subjects = os.listdir(dataset_path)
+    subjects = [sub for sub in os.listdir(dataset_path) if not os.path.isfile(os.path.join(dataset_path, sub))]
+    print (len(subjects))
     training_subjects = subjects[:int(.8*len(subjects))]
     validation_subjects = subjects[int(.8*len(subjects)):]
 
     for i, subjects in enumerate([training_subjects, validation_subjects]):
-        for subject in subjects:
+        for subject in tqdm(subjects):
+            print(subject)
             spath = {}
             subject_path = os.path.join(dataset_path, subject)
             spath['flair'] = os.path.join(subject_path, subject + '_flair.nii.gz')
@@ -110,12 +120,12 @@ def GenerateCSV(model, dataset_path, logs_root):
         dataFrame['TCdice']  = TCDice
         dataFrame['background'] = backgroundRegion
         dataFrame['coordinate'] = coordinate
-
+        
+        os.makedirs(os.path.join(logs_root, 'csv'), exist_ok=True)
         if i == 0: save_path = os.path.join(logs_root, 'csv/training.csv')
         else: save_path = os.path.join(logs_root, 'csv/validation.csv')
 
-        os.makedirs(save_path, exist_ok=True)
-        pd.to_csv(dataFrame, save_path)
+        dataFrame.to_csv(save_path)
     return save_path
 
 
@@ -124,12 +134,15 @@ if __name__ == '__main__':
     T3Dnclasses = 5
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     # device = "cpu"
+    ants_path = os.path.join('/opt/ANTs/bin/')
+    from os.path import expanduser
+    home = expanduser("~")
+    ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
 
-    map_location = device
     Tir3Dnet = FCDenseNet57(T3Dnclasses)
-    ckpt = torch.load(ckpt_tir3D, map_location=map_location)
+    ckpt = torch.load(ckpt_tir3D, map_location=device)
     Tir3Dnet.load_state_dict(ckpt['state_dict'])
     print ("================================== TIRNET3D Loaded =================================")
     Tir3Dnet = Tir3Dnet.to(device)
 
-    GenerateCSV(Tir3Dnet, '../', '../Logs/')
+    GenerateCSV(Tir3Dnet, '../../../../MICCAI_BraTS2020_TrainingData', '../../../../Logs/')

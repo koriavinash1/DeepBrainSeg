@@ -9,8 +9,11 @@ import skimage.morphology as morph
 import torch
 from torch.utils.data import Dataset
 
-from ../..helpers.helper import *
+import sys
+sys.path.append('../..')
+from helpers.helper import *
 
+ants_path = os.path.join('/opt/ANTs/bin/')
 def nii_loader(paths):
     """
     Now given a path, we have to load
@@ -36,12 +39,12 @@ def nii_loader(paths):
     t1ce = nib.load(paths['t1ce']).get_data()
 
     try:
-        brainmask = nib.load(paths['mask']).get_data()
-    else:
-        brainmask = get_ants_mask(ants_path, paths['t1'])
+        brain_mask = nib.load(paths['mask']).get_data()
+    except:
+        brain_mask = get_ants_mask(ants_path, paths['t1'])
 
     sege_mask = np.uint8(nib.load(paths['seg']).get_data())
-    sege_mask[(brainmask != 0)*(sege_mask <= 0)] = 5
+    sege_mask[(brain_mask != 0)*(sege_mask <= 0)] = 5
     sege_mask[np.where(sege_mask==4)] = 3
     sege_mask[np.where(sege_mask==5)] = 4  ## making an effort to make classes 0,1,2,3,4 rather than 0,1,2,4,5
 
@@ -49,7 +52,7 @@ def nii_loader(paths):
     t1ce  = normalize(t1ce, brain_mask)
     t2    = normalize(t2, brain_mask)
     flair = normalize(flair, brain_mask)
-
+    data = {}
     data['flair'] = flair
     data['t2'] = t2
     data['t1'] = t1
@@ -60,27 +63,21 @@ def nii_loader(paths):
 def get_patch(vol, seg, coordinate = (0,0,0), size = 64):
     data = np.zeros((4, size, size, size))
 
-    try:
-        shape = flair.shape
-        data[0,:,:,:] = vol['flair'][coordinate[0]:coordinate[0] + size,
-                coordinate[1]:coordinate[1] + size,
-                coordinate[2]:coordinate[2] + size]
-        data[1,:,:,:] = vol['t2'][coordinate[0]:coordinate[0] + size,
-                coordinate[1]:coordinate[1] + size,
-                coordinate[2]:coordinate[2] + size]
-        data[2,:,:,:] = vol['t1'][coordinate[0]:coordinate[0] + size,
-                coordinate[1]:coordinate[1] + size,
-                coordinate[2]:coordinate[2] + size]
-        data[3,:,:,:] = vol['t1ce'][coordinate[0]:coordinate[0] + size,
-                coordinate[1]:coordinate[1] + size,
-                coordinate[2]:coordinate[2] + size]
-        seg_mask = seg[coordinate[0]:coordinate[0] + size,
-                coordinate[1]:coordinate[1] + size,
-                coordinate[2]:coordinate[2] + size]
-    except:
-        shape = flair.shape
-        print(path, shape)
-
+    data[0,:,:,:] = vol['flair'][coordinate[0]:coordinate[0] + size,
+ 	coordinate[1]:coordinate[1] + size,
+	coordinate[2]:coordinate[2] + size]
+    data[1,:,:,:] = vol['t2'][coordinate[0]:coordinate[0] + size,
+	coordinate[1]:coordinate[1] + size,
+	coordinate[2]:coordinate[2] + size]
+    data[2,:,:,:] = vol['t1'][coordinate[0]:coordinate[0] + size,
+	coordinate[1]:coordinate[1] + size,
+	coordinate[2]:coordinate[2] + size]
+    data[3,:,:,:] = vol['t1ce'][coordinate[0]:coordinate[0] + size,
+	coordinate[1]:coordinate[1] + size,
+	coordinate[2]:coordinate[2] + size]
+    seg_mask = seg[coordinate[0]:coordinate[0] + size,
+	coordinate[1]:coordinate[1] + size,
+	coordinate[2]:coordinate[2] + size]
     return data, seg_mask
 
 
