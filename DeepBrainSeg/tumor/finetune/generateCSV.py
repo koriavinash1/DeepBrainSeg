@@ -14,6 +14,10 @@ sys.path.append('../..')
 from helpers.helper import *
 
 from tqdm import tqdm
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+# device = "cpu"
+ants_path = os.path.join('/opt/ANTs/bin/')
+
 
 def __get_whole_tumor__(data):
     return (data > 0)*(data < 4)
