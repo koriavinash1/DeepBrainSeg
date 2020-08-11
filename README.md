@@ -15,6 +15,9 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 - [x] Coregistration
 - [x] Dcm and nifty support (converts dcm to nifty and works)
 - [x] UI based inference framework
+- [x] Finetuning
+  - [x] Hardmining
+  - [x] Gradual Unfreezing
 - [ ] Whole Brain Segmentation
 
 
