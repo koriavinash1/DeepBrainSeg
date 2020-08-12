@@ -117,7 +117,7 @@ class Trainer():
 
         self.start_epoch = 0
         self.hardmine_every = 8
-        self.hardmine_iteration = 0
+        self.hardmine_iteration = 1
         self.logs_root = logs_root
         self.dataRoot = data_root
         self.Traincsv_path = Traincsv_path
@@ -131,6 +131,20 @@ class Trainer():
         sub = pd.DataFrame()
         lossMIN    = 100000
         accMax     = 0
+
+
+        #---- Load checkpoint
+        if checkpoint != None:
+            saved_parms=torch.load(checkpoint)
+            self.Tir3Dnet.load_state_dict(saved_parms['state_dict'])
+            # self.optimizer.load_state_dict(saved_parms['optimizer'])
+            self.start_epoch= saved_parms['epochID']
+            lossMIN    = saved_parms['best_loss']
+            accMax     = saved_parms['best_acc']
+            print (saved_parms['confusion_matrix'])
+
+        #---- TRAIN THE NETWORK
+
         timestamps = []
         losses = []
         accs = []
@@ -141,18 +155,18 @@ class Trainer():
         for epochID in range (self.start_epoch, trMaxEpoch):
 
             if (epochID % self.hardmine_every) == (self.hardmine_every -1):
-                self.hardmine_iteration += 1
                 self.Traincsv_path = GenerateCSV(self.Tir3Dnet, 
                                                    self.dataRoot, 
                                                    self.logs_root, 
                                                    iteration = self.hardmine_iteration)
+                self.hardmine_iteration += 1
 
             #-------------------- SETTINGS: DATASET BUILDERS
 
             datasetTrain = Generator(csv_path = self.Traincsv_path,
                                                 batch_size = trBatchSize,
                                                 hardmine_every = self.hardmine_every,
-                                                iteration = 1 + epochID)
+                                                iteration = (1 + epochID) % self.hardmine_every)
             datasetVal  =   Generator(csv_path = self.Validcsv_path,
                                                 batch_size = trBatchSize,
                                                 hardmine_every = self.hardmine_every,
@@ -384,11 +398,13 @@ if __name__ == "__main__":
                         '../../../../Logs/csv/validation.csv',
                         '../../../../MICCAI_BraTS2020_TrainingData',
                         '../../../../Logs')
+
+    ckpt_path = '../../../../Logs/models/model_loss = 0.2870774023637236_acc = 0.904420656270211_best_loss.pth.tar'
     timestampTime = time.strftime("%H%M%S")
     timestampDate = time.strftime("%d%m%Y")
     timestampLaunch = timestampDate + '-' + timestampTime
     trainer.train(nnClassCount = nclasses, 
-                  trBatchSize = 8, 
+                  trBatchSize = 4, 
                   trMaxEpoch = 50, 
                   timestampLaunch = timestampLaunch, 
-                  checkpoint=None)
+                  checkpoint = ckpt_path)
