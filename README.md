@@ -15,6 +15,9 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 - [x] Coregistration
 - [x] Dcm and nifty support (converts dcm to nifty and works)
 - [x] UI based inference framework
+- [x] Finetuning
+  - [x] Hardmining
+  - [x] Gradual Unfreezing
 - [ ] Whole Brain Segmentation
 
 
@@ -156,6 +159,17 @@ extractor.all_features()
 + More details about network architecture and training procedure can be found [here](https://link.springer.com/chapter/10.1007/978-3-030-11726-9_43)
 
 ### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
+
+## Windows 10 Installation Guide
+
+![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/DeepBrainSegUI-running-on-Windows-10.gif)
+**Figure_0**: DeepBrainSeg starting up on Windows 10.
+
+![image](https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/Segmentation_Inference-DeepBrainSegUI-running-on-Windows-10.gif)
+
+**Figure_1**: DeepBrainSeg used to get brain segmentation on Windows 10. (Note: Ensemble segmentation/inference takes ~2 hours via torch_cpu, on my i7 6700 intel cpu. Torch cuda/gpu on the other hand, is much faster, with ensemble segmentation/inference taking only ~10 minutes, on my gtx 1060 3gb)
+
+Installation Guide: https://github.com/JordanMicahBennett/DeepBrainSeg/blob/master/WINDOWS%2010%20INSTALLATION%20GUIDE.md
 
 ## Contact 
 * Avinash Kori (koriavinash1@gmail.com)
