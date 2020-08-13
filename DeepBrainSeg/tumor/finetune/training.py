@@ -145,7 +145,7 @@ class Trainer():
             datasetTrain = Generator(csv_path = self.Traincsv_path,
                                                 batch_size = trBatchSize,
                                                 hardmine_every = self.hardmine_every,
-                                                iteration = self.hardmine_iteration)
+                                                iteration = epochID)
             datasetVal  =   Generator(csv_path = self.Validcsv_path,
                                                 batch_size = trBatchSize,
                                                 hardmine_every = self.hardmine_every,
@@ -247,6 +247,22 @@ class Trainer():
         sub['ET_dice_score'] = et_dice_scores
 
         sub.to_csv(os.path.join(self.logs_root, 'training.csv'), index=True)
+
+
+    def _gradual_unfreezing_(self, epochID):
+        nlayers = len(model.named_children())
+        layer_epoch = nlayers//self.hardmine_every
+
+        for i, (name, child) in enumerate(self.Tir3Dnet.named_children()):
+
+            if i >= nlayers - (epochID + 1)*layer_epoch:
+                print(name + ' is unfrozen')
+                for param in child.parameters():
+                    param.requires_grad = True
+            else:
+                print(name + ' is frozen')
+                for param in child.parameters():
+                    param.requires_grad = False
 
 
     #--------------------------------------------------------------------------------
