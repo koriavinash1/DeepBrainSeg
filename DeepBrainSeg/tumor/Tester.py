@@ -3,6 +3,28 @@
 #
 # author: Avinash Kori
 # contact: koriavinash1@gmail.com
+# MIT License
+
+# Copyright (c) 2020 Avinash Kori
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 
 import torch
 import SimpleITK as sitk
@@ -24,6 +46,7 @@ home = expanduser("~")
 #========================================================================================
 # prediction functions.....................
 bin_path = os.path.join('/opt/ANTs/bin/')
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class tumorSeg():
     """
         class performs segmentation for a given sequence of patient data.
@@ -52,9 +75,6 @@ class tumorSeg():
                     ants_path = bin_path):
 
 
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        # device = "cpu"
-
         map_location = device
         #========================================================================================
 
@@ -71,7 +91,7 @@ class tumorSeg():
         self.ABLnet = FCDenseNet103(n_classes = self.ABLnclasses) ## intialize the graph
         saved_parms=torch.load(ckpt_ABL, map_location=map_location) 
         self.ABLnet.load_state_dict(saved_parms['state_dict']) ## fill the model with trained params
-        print ("=================================== ABLNET2D Loaded =================================")
+        print ("================================ ABLNET2D Loaded ==============================")
         self.ABLnet.eval()
         self.ABLnet = self.ABLnet.to(device)
 
@@ -83,7 +103,7 @@ class tumorSeg():
         self.MNET2D = FCDenseNet57(self.Mnclasses)
         ckpt = torch.load(ckpt_tir2D, map_location=map_location)
         self.MNET2D.load_state_dict(ckpt['state_dict'])
-        print ("=================================== MNET2D Loaded ===================================")
+        print ("================================ MNET2D Loaded ================================")
         self.MNET2D.eval()
         self.MNET2D = self.MNET2D.to(device)
 
@@ -97,7 +117,7 @@ class tumorSeg():
             self.BNET3Dnet = BrainNet_3D_Inception()
             ckpt = torch.load(ckpt_BNET3D, map_location=map_location)
             self.BNET3Dnet.load_state_dict(ckpt['state_dict'])
-            print ("=================================== KAMNET3D Loaded =================================")
+            print ("================================ KAMNET3D Loaded ==============================")
             self.BNET3Dnet.eval()
             self.BNET3Dnet = self.BNET3Dnet.to(device)
 
@@ -109,7 +129,7 @@ class tumorSeg():
             self.Tir3Dnet = FCDenseNet57(self.T3Dnclasses)
             ckpt = torch.load(ckpt_tir3D, map_location=map_location)
             self.Tir3Dnet.load_state_dict(ckpt['state_dict'])
-            print ("================================== TIRNET2D Loaded =================================")
+            print ("=============================== TIRNET2D Loaded ==============================")
             self.Tir3Dnet.eval()
             self.Tir3Dnet = self.Tir3Dnet.to(device)
 

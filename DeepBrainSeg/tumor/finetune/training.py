@@ -26,6 +26,7 @@ from models.modelTir3D import FCDenseNet57
 sys.path.append('../..')
 from helpers.helper import *
 from generateCSV import GenerateCSV
+
 from os.path import expanduser
 home = expanduser("~")
 
@@ -90,6 +91,7 @@ class Trainer():
                     Validcsv_path = None,
                     data_root = None,
                     logs_root = None,
+                    antehoc_feedback = GenerateCSV,
                     gradual_unfreeze = True):
 
         # device = "cpu"
@@ -120,12 +122,13 @@ class Trainer():
         self.hardmine_iteration = 1
         self.logs_root = logs_root
         self.dataRoot = data_root
+        self.antehoc_feedback = antehoc_feedback
         self.Traincsv_path = Traincsv_path
         self.Validcsv_path = Validcsv_path
         self.gradual_unfreeze = gradual_unfreeze
 
 
-    def train(self, nnClassCount, trBatchSize, trMaxEpoch, timestampLaunch, checkpoint):
+    def train(self, nnClassCount, trBatchSize, DataGenerator, trMaxEpoch, timestampLaunch, checkpoint):
 
         #---- TRAIN THE NETWORK
         sub = pd.DataFrame()
@@ -145,17 +148,17 @@ class Trainer():
 
         #---- TRAIN THE NETWORK
 
-        timestamps = []
-        losses = []
         accs = []
-        wt_dice_scores=[]
-        tc_dice_scores=[]
-        et_dice_scores=[]
+        losses = []
+        timestamps = []
+        tc_dice_scores = []
+        wt_dice_scores = []
+        et_dice_scores = []
 
         for epochID in range (self.start_epoch, trMaxEpoch):
 
             if (epochID % self.hardmine_every) == (self.hardmine_every -1):
-                self.Traincsv_path = GenerateCSV(self.Tir3Dnet, 
+                self.Traincsv_path = self.antehoc_feedback(self.Tir3Dnet, 
                                                    self.dataRoot, 
                                                    self.logs_root, 
                                                    iteration = self.hardmine_iteration)
@@ -163,11 +166,11 @@ class Trainer():
 
             #-------------------- SETTINGS: DATASET BUILDERS
 
-            datasetTrain = Generator(csv_path = self.Traincsv_path,
+            datasetTrain = DataGenerator(csv_path = self.Traincsv_path,
                                                 batch_size = trBatchSize,
                                                 hardmine_every = self.hardmine_every,
                                                 iteration = (1 + epochID) % self.hardmine_every)
-            datasetVal  =   Generator(csv_path = self.Validcsv_path,
+            datasetVal  =   DataGenerator(csv_path = self.Validcsv_path,
                                                 batch_size = trBatchSize,
                                                 hardmine_every = self.hardmine_every,
                                                 iteration = 0)
@@ -178,7 +181,7 @@ class Trainer():
             if self.gradual_unfreeze: 
                 # Need to include this in call back, prevent optimizer reset at every epoch
                 # TODO:
-                self._gradual_unfreezing_(epochID)
+                self._gradual_unfreezing_(epochID % self.hardmine_every)
                 self.optimizer = optim.Adam (filter(lambda p: p.requires_grad, 
                                                     self.Tir3Dnet.parameters()), 
                                                     lr=0.0001, betas=(0.9, 0.999), 
@@ -283,22 +286,6 @@ class Trainer():
         sub.to_csv(os.path.join(self.logs_root, 'training.csv'), index=True)
 
 
-    def _gradual_unfreezing_(self, epochID):
-        nlayers = len(model.named_children())
-        layer_epoch = nlayers//self.hardmine_every
-
-        for i, (name, child) in enumerate(self.Tir3Dnet.named_children()):
-
-            if i >= nlayers - (epochID + 1)*layer_epoch:
-                print(name + ' is unfrozen')
-                for param in child.parameters():
-                    param.requires_grad = True
-            else:
-                print(name + ' is frozen')
-                for param in child.parameters():
-                    param.requires_grad = False
-
-
     #--------------------------------------------------------------------------------
     def _gradual_unfreezing_(self, epochID):
         nlayers = 0
@@ -333,20 +320,13 @@ class Trainer():
                 varInput  = data.to(device)
                 varTarget = target.to(device)
                 # varMap    = weight_map.to(device)
-                # print (varInput.size(), varTarget.size())
 
                 varOutput = model(varInput)
                 
                 cross_entropy_lossvalue = loss(varOutput, varTarget)
-
-                # assert False
                 # cross_entropy_lossvalue = torch.mean(cross_entropy_lossvalue)
                 dice_loss_ =  dice_loss(varOutput, varTarget)
                 lossvalue  = cross_entropy_lossvalue + dice_loss_
-                # lossvalue  = cross_entropy_lossvalue
-
-
-                # print(lossvalue.size(), varOutput.size(), varMap.size())
                 lossvalue = torch.mean(lossvalue)
 
                 optimizer.zero_grad()
@@ -375,7 +355,6 @@ class Trainer():
                 varInput  = data.to(device)
                 varTarget = target.to(device)
                 # varMap    = weight_map.to(device)
-                # print (varInput.size(), varTarget.size())
 
                 varOutput = model(varInput)
                 _, preds = torch.max(varOutput,1)
@@ -386,18 +365,15 @@ class Trainer():
                 et_dice_score += et_
 
                 cross_entropy_lossvalue = loss(varOutput, varTarget)
-
-                # assert False
                 # cross_entropy_lossvalue = torch.mean(cross_entropy_lossvalue)
                 dice_loss_              =  dice_loss(varOutput, varTarget)
 
                 losstensor  =  cross_entropy_lossvalue + dice_loss_
-                # losstensor  =  cross_entropy_lossvalue 
-                # print varOutput, varTarget
+
                 losstensorMean += losstensor
                 confusion_meter.add(preds.data.view(-1), varTarget.data.view(-1))
                 lossVal += losstensor.item()
-                del losstensor,_,preds
+                del losstensor, _, preds
                 del varOutput, varTarget, varInput
                 lossValNorm += 1
 

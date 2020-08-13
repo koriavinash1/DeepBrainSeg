@@ -131,7 +131,7 @@ def save_volume(volume, affine, path):
 
 
 def scale_every_slice_between_0_to_255(a):
-    normalized_a=  255*((a-np.min(a))/(np.max(a)-np.min(a)))
+    normalized_a =  255*((a-np.min(a))/(np.max(a)-np.min(a)))
     return normalized_a
     
 
