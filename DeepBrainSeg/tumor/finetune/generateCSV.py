@@ -18,6 +18,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 # device = "cpu"
 ants_path = os.path.join('/opt/ANTs/bin/')
 
+
 def __get_whole_tumor__(data):
     return (data > 0)*(data < 4)
 
@@ -100,7 +101,7 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
     else :
         training_subjects = pd.read_csv('../../../../Logs/csv/training.csv')['path'].values
         training_subjects = [sub.split('/')[-1] for sub in training_subjects]
-        data_splits = [training_subjects]
+        data_splits = [np.unique(training_subjects)]
 
     for i, subjects in enumerate(data_splits):
         for subject in tqdm(subjects):
