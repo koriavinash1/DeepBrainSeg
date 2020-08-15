@@ -413,11 +413,10 @@ class Trainer():
 
     #--------------------------------------------------------------------------------
     def infer (self, ckpt, rootpath, save_path, size = 64):
+        
         saved_parms=torch.load(ckpt)
         self.Tir3Dnet.load_state_dict(saved_parms['state_dict'])
-
-        for patient in os.listdir(rootpath):
-            vol = self.loader(os.path.join(rootpath, patient))
+        def __get_logits__(vol):
             shape = vol['t1'].shape # to exclude batch_size
             final_prediction = np.zeros((nclasses, shape[0], shape[1], shape[2]))
             x_min, x_max, y_min, y_max, z_min, z_max = 0, shape[0], 0, shape[1], 0, shape[2]
@@ -434,9 +433,14 @@ class Trainer():
                             pred = pred.data.numpy()
 
                             final_prediction[:, x:x + size, y:y + size, z:z + size] = pred[0]
+            return final_prediction
 
 
-            final_prediction_logits = convert5class_logitsto_4class(final_prediction)
+        for patient in os.listdir(rootpath):
+            vol = self.loader(os.path.join(rootpath, patient))
+            logits = __get_logits__(vol)
+
+            final_prediction_logits = convert5class_logitsto_4class(logits)
             final_pred = postprocessing.densecrf(final_prediction_logits)
             final_pred = postprocessing.connected_components(final_pred)
             final_pred = utils.adjust_classes(final_pred)
