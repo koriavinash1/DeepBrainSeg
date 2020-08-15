@@ -4,13 +4,16 @@ import time
 sys.path.append('..')
 
 from DeepBrainSeg.tumor import FineTuner 
+from os.path import expanduser
+home = expanduser("~")
 
 finetune = FineTuner('../../Logs/csv/training.csv',
                     '../../Logs/csv/validation.csv',
                     '../../MICCAI_BraTS2020_TrainingData',
                     '../../Logs')
 
-ckpt_path = '../../Logs/models/model_loss = 0.280981784279302_acc = 0.9003648718656386_best_loss.pth.tar'
+# ckpt_path = '../../Logs/models/model_loss = 0.280981784279302_acc = 0.9003648718656386_best_loss.pth.tar'
+ckpt_path = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
 timestampTime = time.strftime("%H%M%S")
 timestampDate = time.strftime("%d%m%Y")
 timestampLaunch = timestampDate + '-' + timestampTime

@@ -53,7 +53,7 @@ def clip(x, q=90):
 
 def standardize(img, 
                 mask = None, 
-                median = True):
+                median = False):
     """
         standardizes the volume by offsetting the intensities
         w.r.t mean or median on brain intensities

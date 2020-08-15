@@ -421,9 +421,11 @@ class FineTuner():
         os.makedirs(save_path, exist_ok = True)
         saved_parms = torch.load(ckpt)
         self.Tir3Dnet.load_state_dict(saved_parms['state_dict'])
+        self.Tir3Dnet.to(self.device)
+
         def __get_logits__(vol):
-            for key in vol.keys():
-                vol[key] = np.pad(vol[key], ((size//4, size//4), (size//4, size//4), (size//4, size//4))) 
+            # for key in vol.keys():
+            #     vol[key] = np.pad(vol[key], ((size//4, size//4), (size//4, size//4), (size//4, size//4))) 
             shape = vol['t1'].shape
             final_prediction = np.zeros((self.T3Dnclasses, shape[0], shape[1], shape[2]))
             x_min, x_max = 0, shape[0] - size
@@ -440,10 +442,10 @@ class FineTuner():
                             data = Variable(torch.from_numpy(data).unsqueeze(0)).to(self.device).float()
                             pred = torch.nn.functional.softmax(self.Tir3Dnet(data).detach().cpu())
                             pred = pred.data.numpy()
-                            final_prediction[:, x + s:x + 3*s, 
-                                            y + s:y + 3*s, 
-                                            z + s:z + 3*s] = pred[0][:, s:-s, s:-s, s:-s]
-            return final_prediction[:, s:-s, s:-s, s:-s]
+                            final_prediction[:, x:x + size, 
+                                            y:y + size, 
+                                            z:z + size] = pred[0] #[:, s:-s, s:-s, s:-s]
+            return final_prediction #[:, s:-s, s:-s, s:-s]
 
 
 
@@ -460,9 +462,10 @@ class FineTuner():
             vol, _, affine = nii_loader(spath)
             logits = __get_logits__(vol)
             final_prediction_logits = utils.convert5class_logitsto_4class(logits)
-            final_pred = postprocessing.densecrf(final_prediction_logits)
-            final_pred = postprocessing.connected_components(final_pred)
-            final_pred = utils.adjust_classes(final_pred)
+            # final_pred = postprocessing.densecrf(final_prediction_logits)
+            final_pred = np.argmax(final_prediction_logits, axis=0)
+            # final_pred = postprocessing.connected_components(final_pred)
+            # final_pred = utils.adjust_classes(final_pred)
 
             # save final_prediction
             if isinstance(save_path, str):

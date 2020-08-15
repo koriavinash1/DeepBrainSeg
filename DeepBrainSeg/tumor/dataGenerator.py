@@ -79,16 +79,16 @@ def nii_loader(paths):
         seg_mask[np.where(sege_mask==5)] = 4  ## making an effort to make classes 0,1,2,3,4 rather than 0,1,2,4,5
     except:
         seg_mask = None
-
+    """
     t1    = preprocessing.clip(t1)
     t1ce  = preprocessing.clip(t1ce)
     t2    = preprocessing.clip(t2)
     flair = preprocessing.clip(flair)
-
-    t1    = preprocessing.normalize(t1,    brain_mask)
-    t1ce  = preprocessing.normalize(t1ce,   brain_mask)
-    t2    = preprocessing.normalize(t2,    brain_mask)
-    flair = preprocessing.normalize(flair, brain_mask)
+    """
+    t1    = preprocessing.standardize(t1,    brain_mask)
+    t1ce  = preprocessing.standardize(t1ce,   brain_mask)
+    t2    = preprocessing.standardize(t2,    brain_mask)
+    flair = preprocessing.standardize(flair, brain_mask)
 
     data = {}
     data['flair'] = flair
