@@ -47,12 +47,12 @@ import random
 
 from tqdm import tqdm
 
-from dataGenerator import Generator
-
+from .dataGenerator import Generator
 from .models.modelTir3D import FCDenseNet57
 from .feedBack import GenerateCSV
 from .dataGenerator import nii_loader, get_patch
 from ..helpers import utils
+from ..helpers import postprocessing
 
 
 from os.path import expanduser
@@ -73,7 +73,7 @@ def _get_dice_score_(prediction, ground_truth):
     pred  = torch.exp(prediction)
     p     = np.uint8(np.argmax(pred.data.cpu().numpy(), axis=1))
     gt    = np.uint8(ground_truth.data.cpu().numpy())
-    wt, tc, et = [2*np.sum(func(p)*func(gt)) ReduceLROnPlateauReduceLROnPlateau/ (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
+    wt, tc, et = [2*np.sum(func(p)*func(gt))/ (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
     return wt, tc, et
 
 
@@ -422,12 +422,13 @@ class FineTuner():
         saved_parms = torch.load(ckpt)
         self.Tir3Dnet.load_state_dict(saved_parms['state_dict'])
         def __get_logits__(vol):
-            vol = np.pad(vol, ())
+            for key in vol.keys():
+                vol[key] = np.pad(vol[key], ((size//4, size//4), (size//4, size//4), (size//4, size//4))) 
             shape = vol['t1'].shape
-            final_prediction = np.zeros((nclasses, shape[0], shape[1], shape[2]))
-            x_min, x_max = 0, shape[0] - size//4
-            y_min, y_max = 0, shape[1] - size//4
-            z_min, z_max = 0, shape[2] - size//4
+            final_prediction = np.zeros((self.T3Dnclasses, shape[0], shape[1], shape[2]))
+            x_min, x_max = 0, shape[0] - size
+            y_min, y_max = 0, shape[1] - size
+            z_min, z_max = 0, shape[2] - size
 
             s = size//4
             with torch.no_grad():
@@ -436,31 +437,38 @@ class FineTuner():
                         for z in range(z_min, z_max, size//2):
 
                             data = get_patch(vol, coordinate = (x, y, z), size = size)
-                            data = Variable(torch.from_numpy(data).unsqueeze(0)).to(device).float()
-                            pred = torch.nn.functional.softmax(model(data).detach().cpu())
+                            data = Variable(torch.from_numpy(data).unsqueeze(0)).to(self.device).float()
+                            pred = torch.nn.functional.softmax(self.Tir3Dnet(data).detach().cpu())
                             pred = pred.data.numpy()
-
-                            final_prediction[:, x:x + s, 
-                                            y:y + s, 
-                                            z:z + s] = pred[0][s:-s, s:-s, s:-s]
-            return final_prediction[s:-s, s:-s, s:-s]
-
+                            final_prediction[:, x + s:x + 3*s, 
+                                            y + s:y + 3*s, 
+                                            z + s:z + 3*s] = pred[0][:, s:-s, s:-s, s:-s]
+            return final_prediction[:, s:-s, s:-s, s:-s]
 
 
-        for patient in tqdm(os.listdir(rootpath)):
-            vol, _, affine = nii_loader(os.path.join(rootpath, patient))
+
+        for subject in tqdm(os.listdir(rootpath)):
+            spath = {}
+            subject_path = os.path.join(rootpath, subject)
+            spath['flair'] = os.path.join(subject_path, subject + '_flair.nii.gz')
+            spath['t1ce']  = os.path.join(subject_path, subject + '_t1ce.nii.gz')
+            spath['seg']   = os.path.join(subject_path, subject + '_seg.nii.gz')
+            spath['t1']    = os.path.join(subject_path, subject + '_t1.nii.gz')
+            spath['t2']    = os.path.join(subject_path, subject + '_t2.nii.gz')
+            spath['mask']  = os.path.join(subject_path, 'mask.nii.gz')
+
+            vol, _, affine = nii_loader(spath)
             logits = __get_logits__(vol)
-
-            final_prediction_logits = convert5class_logitsto_4class(logits)
+            final_prediction_logits = utils.convert5class_logitsto_4class(logits)
             final_pred = postprocessing.densecrf(final_prediction_logits)
             final_pred = postprocessing.connected_components(final_pred)
             final_pred = utils.adjust_classes(final_pred)
 
             # save final_prediction
-            if isinstance(save_path) == str:
-                path = os.path.join(save_path, patient + '.nii.gz')
+            if isinstance(save_path, str):
+                path = os.path.join(save_path, subject )
             else:
-                path = os.path.join(rootpath, patient, 'DeepBrainSeg_Prediction.nii.gz')
+                path = os.path.join(rootpath, subject, 'DeepBrainSeg_Prediction')
 
             utils.save_volume(final_pred, affine, path)
         pass

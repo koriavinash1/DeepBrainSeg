@@ -18,10 +18,10 @@ import json, shutil
 print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Ants Installation')
 
 ants_path = os.path.join(home, '.DeepBrainSeg/ants')
-os.makedirs(os.path.join(ants_path, 'code')) 
 try:
 	current_path = os.getcwd()
 	if (not os.path.exists(ants_path)) or (os.listdir(ants_path) == []):
+		os.makedirs(os.path.join(ants_path, 'code')) 
 		os.chdir(os.path.join(ants_path, 'code'))
 		os.system('git clone https://github.com/stnava/ANTs.git')
 		os.makedirs(os.path.join(ants_path, 'bin/antsBuild'))

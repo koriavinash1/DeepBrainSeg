@@ -34,8 +34,8 @@ from tqdm import tqdm
 from torch.autograd import Variable
 from torchvision import transforms
 
-from dataGenerator import nii_loader, get_patch
-from helpers.helper import *
+from .dataGenerator import nii_loader, get_patch
+from ..helpers import utils
 
 from tqdm import tqdm
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -109,7 +109,7 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
                         
                         # print(ETDice[-1], WTDice[-1], TCDice[-1], WTRegion[-1], ETRegion[-1])
 
-        final_prediction = convert5class_logitsto_4class(final_prediction)
+        final_prediction = utils.convert5class_logitsto_4class(final_prediction)
         final_prediction = np.argmax(final_prediction, axis=0).reshape((shape[0], shape[1],shape[2]))
 
         return final_prediction
@@ -140,7 +140,7 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
 
             vol, seg, affine = nii_loader(spath)
             predictions = _GenerateSegmentation_(subject_path, vol, seg, size = 64, nclasses = 5)
-            save_volume(predictions, affine, os.path.join(subject_path, 'DeepBrainSeg_Prediction_iteration_{}'.format(iteration)))
+            utils.save_volume(predictions, affine, os.path.join(subject_path, 'DeepBrainSeg_Prediction_iteration_{}'.format(iteration)))
 
 
         dataFrame = pd.DataFrame()

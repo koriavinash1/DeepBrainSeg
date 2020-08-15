@@ -22,3 +22,6 @@ def get_bet_mask(vol_path, device = 0):
     os.system('mv ' + os.path.join(os.path.dirname(vol_path), filename+'_bet_mask.nii.gz') + ' ' + os.path.join(mask_path, filename+'_mask.nii.gz')) 
     mask = np.uint8(nib.load(os.path.join(mask_path, filename+'_mask.nii.gz')).get_data())
     return mask
+
+def bet_skull_stripping():
+    pass

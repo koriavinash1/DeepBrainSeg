@@ -15,5 +15,3 @@ from os.path import expanduser
 home = expanduser("~")
 import json
 
-with open(os.path.join(home, ".DeepBrainSeg/config.json", "w")) as write_file:
-    config = json.load(write_file)

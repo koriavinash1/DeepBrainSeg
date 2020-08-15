@@ -25,6 +25,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import numpy as np
 from scipy.ndimage import uniform_filter, maximum_filter
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import (unary_from_softmax, 
