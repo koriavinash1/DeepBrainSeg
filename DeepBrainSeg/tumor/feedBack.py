@@ -87,7 +87,7 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
                 for y in range(y_min, y_max, size//2):
                     for z in range(z_min, z_max, size//2):
 
-                        data, mask = get_patch(vol, seg, coordinate = (x, y, z), size = size)
+                        data = get_patch(vol, seg, coordinate = (x, y, z), size = size)
                         data = Variable(torch.from_numpy(data).unsqueeze(0)).to(device).float()
                         pred = torch.nn.functional.softmax(model(data).detach().cpu())
                         pred = pred.data.numpy()
@@ -163,7 +163,7 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
         if i == 0: save_path = os.path.join(csv_root, 'training.csv')
         else: save_path = os.path.join(csv_root, 'validation.csv')
 
-        dataFrame.to_csv(save_path)
+        #dataFrame.to_csv(save_path)
     return save_path
 
 
@@ -184,4 +184,4 @@ if __name__ == '__main__':
     print ("================================== TIRNET3D Loaded =================================")
     Tir3Dnet = Tir3Dnet.to(device)
 
-    GenerateCSV(Tir3Dnet, '../../../../MICCAI_BraTS2020_TrainingData', '../../../../Logs/')
+    GenerateCSV(Tir3Dnet, '../../../MICCAI_BraTS2020_ValidationData', '../../../Logs/')

@@ -86,6 +86,6 @@ def class_wise_cc(logits):
     """
     return_ = np.zeros_like(logits)
     for class_ in range(logits.shape[0]):
-        return_[class_, :, :, :] = perform_postprocessing(logits[class_, :, :, :])
+        return_[class_, :, :, :] = connected_components(logits[class_, :, :, :])
 
     return return_

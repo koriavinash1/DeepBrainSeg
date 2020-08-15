@@ -154,10 +154,10 @@ class tumorSeg():
 		brain_mask = brain, whole tumor mask (numpy array, output of ANTs pieline)
         """
 
-        t1    = preprocessing.normalize(t1,    brain_mask)
-        t1ce  = preprocessing.normalize(t1ce,   brain_mask)
-        t2    = preprocessing.normalize(t2,    brain_mask)
-        flair = preprocessing.normalize(flair, brain_mask)
+        t1    = preprocessing.standardize(t1,    brain_mask)
+        t1ce  = preprocessing.standardize(t1ce,   brain_mask)
+        t2    = preprocessing.standardize(t2,    brain_mask)
+        flair = preprocessing.standardize(flair, brain_mask)
 
         generated_output_logits = np.empty((self.ABLnclasses, flair.shape[0], flair.shape[1], flair.shape[2]))
 
@@ -181,7 +181,7 @@ class tumorSeg():
             generated_output_logits[:,:,:, slices] = logits.transpose(0, 1, 3, 2)
 
         final_pred  = utils.apply_argmax_to_logits(generated_output_logits)
-        final_pred  = postprocessing.connected_components(final_pred)
+        final_pred  = postprocessing.class_wise_cc(final_pred)
         final_pred  = utils.adjust_classes_air_brain_tumour(np.uint8(final_pred))
 
         return np.uint8(final_pred)
@@ -197,10 +197,10 @@ class tumorSeg():
 		N = patch size during inference
         """
 
-        t1    = preprocessing.normalize(t1,    brain_mask)
-        t1ce  = preprocessing.normalize(t1ce,   brain_mask)
-        t2    = preprocessing.normalize(t2,    brain_mask)
-        flair = preprocessing.normalize(flair, brain_mask)
+        t1    = preprocessing.standardize(t1,    brain_mask)
+        t1ce  = preprocessing.standardize(t1ce,   brain_mask)
+        t2    = preprocessing.standardize(t2,    brain_mask)
+        flair = preprocessing.standardize(flair, brain_mask)
 
         shape = t1.shape # to exclude batch_size
         final_prediction = np.zeros((self.T3Dnclasses, shape[0], shape[1], shape[2]))
@@ -240,10 +240,10 @@ class tumorSeg():
 		prediction_size = mid inference patch size 
         """
 
-        t1    = preprocessing.normalize(t1,    brain_mask)
-        t1ce  = preprocessing.normalize(t1ce,   brain_mask)
-        t2    = preprocessing.normalize(t2,    brain_mask)
-        flair = preprocessing.normalize(flair, brain_mask)
+        t1    = preprocessing.standardize(t1,    brain_mask)
+        t1ce  = preprocessing.standardize(t1ce,   brain_mask)
+        t2    = preprocessing.standardize(t2,    brain_mask)
+        flair = preprocessing.standardize(flair, brain_mask)
 
         shape = t1.shape # to exclude batch_size
         final_prediction = np.zeros((self.B3Dnclasses, shape[0], shape[1], shape[2]))
@@ -398,7 +398,7 @@ class tumorSeg():
         final_prediction_logits = utils.combine_logits_AM(final_prediction_array)
         final_pred              = postprocessing.densecrf(final_prediction_logits)
         final_pred              = utils.combine_mask_prediction(mask, final_pred)
-        final_pred              = postprocessing.connected_components(final_pred)
+        final_pred              = postprocessing.class_wise_cc(final_pred)
         final_pred              = utils.adjust_classes(final_pred)
 
         if save_path:

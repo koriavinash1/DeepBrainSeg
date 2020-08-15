@@ -109,15 +109,15 @@ class FineTuner():
         map_location = device
 
         self.T3Dnclasses = nclasses
-        self.Tir3Dnet = FCDenseNet57(self.T3Dnclasses)
+        self.model = FCDenseNet57(self.T3Dnclasses)
         ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
         ckpt = torch.load(ckpt_tir3D, map_location=map_location)
-        self.Tir3Dnet.load_state_dict(ckpt['state_dict'])
+        self.model.load_state_dict(ckpt['state_dict'])
         print ("================================== TIRNET3D Loaded =================================")
-        self.Tir3Dnet = self.Tir3Dnet.to(device)
+        self.model = self.model.to(device)
 
         #-------------------- SETTINGS: OPTIMIZER & SCHEDULER
-        self.optimizer = optim.Adam (self.Tir3Dnet.parameters(), 
+        self.optimizer = optim.Adam (self.model.parameters(), 
                                      lr=0.0001, betas=(0.9, 0.999), eps=1e-05, weight_decay=1e-5) 
         self.scheduler = ReduceLROnPlateau(self.optimizer, factor = 0.1, patience = 5, mode = 'min')
         self.optimizer.load_state_dict(ckpt['optimizer'])
@@ -175,7 +175,7 @@ class FineTuner():
         #---- Load checkpoint
         if checkpoint != None:
             saved_parms=torch.load(checkpoint)
-            self.Tir3Dnet.load_state_dict(saved_parms['state_dict'])
+            self.model.load_state_dict(saved_parms['state_dict'])
             # self.optimizer.load_state_dict(saved_parms['optimizer'])
             self.start_epoch= saved_parms['epochID']
             lossMIN    = saved_parms['best_loss']
@@ -194,7 +194,7 @@ class FineTuner():
         for epochID in range (self.start_epoch, trMaxEpoch):
 
             if (epochID % self.hardmine_every) == (self.hardmine_every -1):
-                self.Traincsv_path = self.antehoc_feedback(self.Tir3Dnet, 
+                self.Traincsv_path = self.antehoc_feedback(self.model, 
                                                    self.dataRoot, 
                                                    self.logs_root, 
                                                    iteration = self.hardmine_iteration)
@@ -219,7 +219,7 @@ class FineTuner():
                 # TODO:
                 self._gradual_unfreezing_(epochID % self.hardmine_every)
                 self.optimizer = optim.Adam (filter(lambda p: p.requires_grad, 
-                                                    self.Tir3Dnet.parameters()), 
+                                                    self.model.parameters()), 
                                                     lr=0.0001, betas=(0.9, 0.999), 
                                                     eps=1e-05, weight_decay=1e-5) 
                 self.scheduler = ReduceLROnPlateau(self.optimizer, factor = 0.1, 
@@ -232,12 +232,12 @@ class FineTuner():
 
 
             print (str(epochID)+"/" + str(trMaxEpoch) + "---")
-            self.epochTrain (self.Tir3Dnet, 
+            self.epochTrain (self.model, 
                             dataLoaderTrain, 
                             self.optimizer, 
                             self.loss)
 
-            lossVal, losstensor, wt_dice_score, tc_dice_score, et_dice_score, _cm = self.epochVal (self.Tir3Dnet, 
+            lossVal, losstensor, wt_dice_score, tc_dice_score, et_dice_score, _cm = self.epochVal (self.model, 
                                                                                             dataLoaderVal, 
                                                                                             self.loss)
 
@@ -267,7 +267,7 @@ class FineTuner():
                 model_name = 'model_loss = ' + str(lossVal) + '_acc = '+str(currAcc) + '_best_loss.pth.tar'
                 
                 states = {'epochID': epochID + 1,
-                            'state_dict': self.Tir3Dnet.state_dict(),
+                            'state_dict': self.model.state_dict(),
                             'best_acc': currAcc,
                             'confusion_matrix':_cm.conf,
                             'best_loss':lossMIN,
@@ -289,7 +289,7 @@ class FineTuner():
                 model_name = 'model_loss = ' + str(lossVal) + '_acc = '+str(currAcc) + '_best_acc.pth.tar'
 
                 states = {'epochID': epochID + 1,
-                            'state_dict': self.Tir3Dnet.state_dict(),
+                            'state_dict': self.model.state_dict(),
                             'best_acc': accMax,
                             'confusion_matrix':_cm.conf,
                             'best_loss':lossVal,
@@ -316,11 +316,11 @@ class FineTuner():
     #--------------------------------------------------------------------------------
     def _gradual_unfreezing_(self, epochID):
         nlayers = 0
-        for _ in self.Tir3Dnet.named_children(): nlayers += 1
+        for _ in self.model.named_children(): nlayers += 1
 
         layer_epoch = 2*nlayers//self.hardmine_every
 
-        for i, (name, child) in enumerate(self.Tir3Dnet.named_children()):
+        for i, (name, child) in enumerate(self.model.named_children()):
 
             if i >= nlayers - (epochID + 1)*layer_epoch:
                 print(name + ' is unfrozen')
@@ -420,17 +420,16 @@ class FineTuner():
 
         os.makedirs(save_path, exist_ok = True)
         saved_parms = torch.load(ckpt)
-        self.Tir3Dnet.load_state_dict(saved_parms['state_dict'])
-        self.Tir3Dnet.to(self.device)
+        self.model.load_state_dict(saved_parms['state_dict'])
 
         def __get_logits__(vol):
             # for key in vol.keys():
             #     vol[key] = np.pad(vol[key], ((size//4, size//4), (size//4, size//4), (size//4, size//4))) 
             shape = vol['t1'].shape
             final_prediction = np.zeros((self.T3Dnclasses, shape[0], shape[1], shape[2]))
-            x_min, x_max = 0, shape[0] - size
-            y_min, y_max = 0, shape[1] - size
-            z_min, z_max = 0, shape[2] - size
+            x_min, x_max, y_min, y_max, z_min, z_max = 0, shape[0], 0, shape[1], 0, shape[2]
+            x_min, x_max, y_min, y_max, z_min, z_max = x_min, min(shape[0] - size, x_max), y_min, min(shape[1] - size, y_max), z_min, min(shape[2] - size, z_max)
+
 
             s = size//4
             with torch.no_grad():
@@ -440,7 +439,7 @@ class FineTuner():
 
                             data = get_patch(vol, coordinate = (x, y, z), size = size)
                             data = Variable(torch.from_numpy(data).unsqueeze(0)).to(self.device).float()
-                            pred = torch.nn.functional.softmax(self.Tir3Dnet(data).detach().cpu())
+                            pred = torch.nn.functional.softmax(self.model(data).detach().cpu())
                             pred = pred.data.numpy()
                             final_prediction[:, x:x + size, 
                                             y:y + size, 
@@ -451,6 +450,7 @@ class FineTuner():
 
         for subject in tqdm(os.listdir(rootpath)):
             spath = {}
+            print (subject)
             subject_path = os.path.join(rootpath, subject)
             spath['flair'] = os.path.join(subject_path, subject + '_flair.nii.gz')
             spath['t1ce']  = os.path.join(subject_path, subject + '_t1ce.nii.gz')
@@ -464,8 +464,8 @@ class FineTuner():
             final_prediction_logits = utils.convert5class_logitsto_4class(logits)
             # final_pred = postprocessing.densecrf(final_prediction_logits)
             final_pred = np.argmax(final_prediction_logits, axis=0)
-            # final_pred = postprocessing.connected_components(final_pred)
-            # final_pred = utils.adjust_classes(final_pred)
+            final_pred = postprocessing.class_wise_cc(final_pred)
+            final_pred = utils.adjust_classes(final_pred)
 
             # save final_prediction
             if isinstance(save_path, str):
