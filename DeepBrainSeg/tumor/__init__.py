@@ -1,8 +1,10 @@
-from .Tester import *
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+
+from .Tester import *
+from .finetuning import *
+
 
 __license__ = 'MIT'
 __maintainer__ = ['Avinash Kori']

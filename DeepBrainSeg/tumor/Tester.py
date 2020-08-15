@@ -403,7 +403,7 @@ class tumorSeg():
 
         if save_path:
             os.makedirs(save_path, exist_ok=True)
-            save_volume(final_pred, affine, os.path.join(save_path, 'DeepBrainSeg_Prediction'))
+            utils.save_volume(final_pred, affine, os.path.join(save_path, 'DeepBrainSeg_Prediction'))
 
         return final_pred
 

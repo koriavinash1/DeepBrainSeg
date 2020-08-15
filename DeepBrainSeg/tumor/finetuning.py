@@ -51,6 +51,9 @@ from dataGenerator import Generator
 
 from .models.modelTir3D import FCDenseNet57
 from .feedBack import GenerateCSV
+from .dataGenerator import nii_loader, get_patch
+from ..helpers import utils
+
 
 from os.path import expanduser
 home = expanduser("~")
@@ -88,7 +91,7 @@ def to_one_hot(y, n_dims=None):
 
 
 
-class Trainer():
+class FineTuner():
 
     def __init__(self, Traincsv_path = None, 
                     Validcsv_path = None,
@@ -413,15 +416,20 @@ class Trainer():
 
     #--------------------------------------------------------------------------------
     def infer (self, ckpt, rootpath, save_path, size = 64):
-        
-        saved_parms=torch.load(ckpt)
+
+
+        os.makedirs(save_path, exist_ok = True)
+        saved_parms = torch.load(ckpt)
         self.Tir3Dnet.load_state_dict(saved_parms['state_dict'])
         def __get_logits__(vol):
-            shape = vol['t1'].shape # to exclude batch_size
+            vol = np.pad(vol, ())
+            shape = vol['t1'].shape
             final_prediction = np.zeros((nclasses, shape[0], shape[1], shape[2]))
-            x_min, x_max, y_min, y_max, z_min, z_max = 0, shape[0], 0, shape[1], 0, shape[2]
-            x_min, x_max, y_min, y_max, z_min, z_max = x_min, min(shape[0] - size, x_max), y_min, min(shape[1] - size, y_max), z_min, min(shape[2] - size, z_max)
+            x_min, x_max = 0, shape[0] - size//4
+            y_min, y_max = 0, shape[1] - size//4
+            z_min, z_max = 0, shape[2] - size//4
 
+            s = size//4
             with torch.no_grad():
                 for x in tqdm(range(x_min, x_max, size//2)):
                     for y in range(y_min, y_max, size//2):
@@ -432,12 +440,15 @@ class Trainer():
                             pred = torch.nn.functional.softmax(model(data).detach().cpu())
                             pred = pred.data.numpy()
 
-                            final_prediction[:, x:x + size, y:y + size, z:z + size] = pred[0]
-            return final_prediction
+                            final_prediction[:, x:x + s, 
+                                            y:y + s, 
+                                            z:z + s] = pred[0][s:-s, s:-s, s:-s]
+            return final_prediction[s:-s, s:-s, s:-s]
 
 
-        for patient in os.listdir(rootpath):
-            vol = self.loader(os.path.join(rootpath, patient))
+
+        for patient in tqdm(os.listdir(rootpath)):
+            vol, _, affine = nii_loader(os.path.join(rootpath, patient))
             logits = __get_logits__(vol)
 
             final_prediction_logits = convert5class_logitsto_4class(logits)
@@ -446,22 +457,10 @@ class Trainer():
             final_pred = utils.adjust_classes(final_pred)
 
             # save final_prediction
+            if isinstance(save_path) == str:
+                path = os.path.join(save_path, patient + '.nii.gz')
+            else:
+                path = os.path.join(rootpath, patient, 'DeepBrainSeg_Prediction.nii.gz')
+
+            utils.save_volume(final_pred, affine, path)
         pass
-
-
-
-if __name__ == "__main__":
-    trainer = Trainer('../../../../Logs/csv/training.csv',
-                        '../../../../Logs/csv/validation.csv',
-                        '../../../../MICCAI_BraTS2020_TrainingData',
-                        '../../../../Logs')
-
-    ckpt_path = '../../../../Logs/models/model_loss = 0.2870774023637236_acc = 0.904420656270211_best_loss.pth.tar'
-    timestampTime = time.strftime("%H%M%S")
-    timestampDate = time.strftime("%d%m%Y")
-    timestampLaunch = timestampDate + '-' + timestampTime
-    trainer.train(nnClassCount = nclasses, 
-                  trBatchSize = 4, 
-                  trMaxEpoch = 50, 
-                  timestampLaunch = timestampLaunch, 
-                  checkpoint = ckpt_path)
