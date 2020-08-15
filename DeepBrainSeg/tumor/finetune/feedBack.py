@@ -1,16 +1,40 @@
-from glob import glob
+#! /usr/bin/env python
+#  -*- coding: utf-8 -*-
+#
+# author: Avinash Kori
+# contact: koriavinash1@gmail.com
+# MIT License
+
+# Copyright (c) 2020 Avinash Kori
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
+import os
+import torch
 import pandas as pd
 import numpy as np
-import torch
 from tqdm import tqdm
 from torch.autograd import Variable
 from torchvision import transforms
-import os
-from dataGenerator import nii_loader, get_patch, Generator
-import sys
-sys.path.append('..')
-from models.modelTir3D import FCDenseNet57
-sys.path.append('../..')
+
+from dataGenerator import nii_loader, get_patch
 from helpers.helper import *
 
 from tqdm import tqdm
@@ -33,7 +57,7 @@ def _get_dice_score_(prediction, ground_truth):
     masks = (__get_whole_tumor__, __get_tumor_core__, __get_enhancing_tumor__)
     p     = np.uint8(prediction)
     gt    = np.uint8(ground_truth)
-    wt, tc, et=[2*np.sum(func(p)*func(gt)) / (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
+    wt, tc, et = [2*np.sum(func(p)*func(gt)) / (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
     return wt, tc, et
 
 
@@ -93,15 +117,14 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
 
     if iteration == 0:
         subjects = [sub for sub in os.listdir(dataset_path) if not os.path.isfile(os.path.join(dataset_path, sub))]
-        print (len(subjects))
         training_subjects = subjects[:int(.8*len(subjects))]
         validation_subjects = subjects[int(.8*len(subjects)):]
         data_splits = [training_subjects, validation_subjects]
-
     else :
         training_subjects = pd.read_csv('../../../../Logs/csv/training.csv')['path'].values
         training_subjects = [sub.split('/')[-1] for sub in training_subjects]
         data_splits = [np.unique(training_subjects)]
+
 
     for i, subjects in enumerate(data_splits):
         for subject in tqdm(subjects):
@@ -154,6 +177,7 @@ if __name__ == '__main__':
     home = expanduser("~")
     ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
 
+    from .models.modelTir3D import FCDenseNet57
     Tir3Dnet = FCDenseNet57(T3Dnclasses)
     ckpt = torch.load(ckpt_tir3D, map_location=device)
     Tir3Dnet.load_state_dict(ckpt['state_dict'])

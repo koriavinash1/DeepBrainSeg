@@ -1,3 +1,30 @@
+#! /usr/bin/env python
+#  -*- coding: utf-8 -*-
+#
+# author: Avinash Kori
+# contact: koriavinash1@gmail.com
+# MIT License
+
+# Copyright (c) 2020 Avinash Kori
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import os
 import numpy as np
 import pandas as pd
@@ -9,11 +36,12 @@ import skimage.morphology as morph
 import torch
 from torch.utils.data import Dataset
 
-import sys
-sys.path.append('../..')
-from helpers.helper import *
+from ..helpers import preprocessing
+from ..brain_mask import get_brain_mask
 
 ants_path = os.path.join('/opt/ANTs/bin/')
+
+
 def nii_loader(paths):
     """
     Now given a path, we have to load
@@ -35,50 +63,63 @@ def nii_loader(paths):
     flair = nib.load(paths['flair']).get_data()
     t2 = nib.load(paths['t2']).get_data()
     t1 = nib.load(paths['t1']).get_data()
-    affine = nib.load(paths['t1']).affine
     t1ce = nib.load(paths['t1ce']).get_data()
+    affine = nib.load(paths['t1']).affine
+
 
     try:
         brain_mask = nib.load(paths['mask']).get_data()
     except:
-        brain_mask = get_ants_mask(ants_path, paths['t1'])
+        brain_mask = get_brain_mask(ants_path, paths['t1'])
 
-    sege_mask = np.uint8(nib.load(paths['seg']).get_data())
-    sege_mask[(brain_mask != 0)*(sege_mask <= 0)] = 5
-    sege_mask[np.where(sege_mask==4)] = 3
-    sege_mask[np.where(sege_mask==5)] = 4  ## making an effort to make classes 0,1,2,3,4 rather than 0,1,2,4,5
+    try:
+        seg_mask = np.uint8(nib.load(paths['seg']).get_data())
+        seg_mask[(brain_mask != 0)*(sege_mask <= 0)] = 5
+        seg_mask[np.where(sege_mask==4)] = 3
+        seg_mask[np.where(sege_mask==5)] = 4  ## making an effort to make classes 0,1,2,3,4 rather than 0,1,2,4,5
+    except:
+        seg_mask = None
 
-    t1    = normalize(t1, brain_mask)
-    t1ce  = normalize(t1ce, brain_mask)
-    t2    = normalize(t2, brain_mask)
-    flair = normalize(flair, brain_mask)
+    t1    = preprocessing.clip(t1)
+    t1ce  = preprocessing.clip(t1ce)
+    t2    = preprocessing.clip(t2)
+    flair = preprocessing.clip(flair)
+
+    t1    = preprocessing.normalize(t1,    brain_mask)
+    t1ce  = preprocessing.normalize(t1ce,   brain_mask)
+    t2    = preprocessing.normalize(t2,    brain_mask)
+    flair = preprocessing.normalize(flair, brain_mask)
+
     data = {}
     data['flair'] = flair
     data['t2'] = t2
     data['t1'] = t1
     data['t1ce'] = t1ce
-    return data, sege_mask, affine
+    return data, seg_mask, affine
 
 
-def get_patch(vol, seg, coordinate = (0,0,0), size = 64):
+def get_patch(vol, seg = None, coordinate = (0,0,0), size = 64):
     data = np.zeros((4, size, size, size))
 
     data[0,:,:,:] = vol['flair'][coordinate[0]:coordinate[0] + size,
- 	coordinate[1]:coordinate[1] + size,
-	coordinate[2]:coordinate[2] + size]
+ 	                               coordinate[1]:coordinate[1] + size,
+	                               coordinate[2]:coordinate[2] + size]
     data[1,:,:,:] = vol['t2'][coordinate[0]:coordinate[0] + size,
-	coordinate[1]:coordinate[1] + size,
-	coordinate[2]:coordinate[2] + size]
+	                               coordinate[1]:coordinate[1] + size,
+	                               coordinate[2]:coordinate[2] + size]
     data[2,:,:,:] = vol['t1'][coordinate[0]:coordinate[0] + size,
-	coordinate[1]:coordinate[1] + size,
-	coordinate[2]:coordinate[2] + size]
+	                               coordinate[1]:coordinate[1] + size,
+	                               coordinate[2]:coordinate[2] + size]
     data[3,:,:,:] = vol['t1ce'][coordinate[0]:coordinate[0] + size,
-	coordinate[1]:coordinate[1] + size,
-	coordinate[2]:coordinate[2] + size]
-    seg_mask = seg[coordinate[0]:coordinate[0] + size,
-	coordinate[1]:coordinate[1] + size,
-	coordinate[2]:coordinate[2] + size]
-    return data, seg_mask
+	                               coordinate[1]:coordinate[1] + size,
+	                               coordinate[2]:coordinate[2] + size]
+    try:
+        seg_mask = seg[coordinate[0]:coordinate[0] + size,
+	                               coordinate[1]:coordinate[1] + size,
+	                               coordinate[2]:coordinate[2] + size]
+        return data, seg_mask
+    except:
+        return data
 
 
 def multilabel_binarize(image_nD, nlabel):
@@ -142,11 +183,13 @@ class Generator(Dataset):
                  hardmine_every = 10,
                  batch_size = 64,
                  iteration = 1,
-                 loader = nii_loader):
+                 loader = nii_loader,
+                 patch_extractor = get_patch):
 
         self.nchannels = 4
         self.nclasses = 5
         self.loader = loader
+        self.patch_extractor = patch_extractor
         self.csv = pd.read_csv(csv_path)
         self.batch_size = batch_size
         self.patch_size = patch_size
@@ -220,8 +263,11 @@ class Generator(Dataset):
 
             spath['mask']  = os.path.join(subject_path, 'mask.nii.gz')
             coordinate = [int(co) for co in subject['coordinate'][1:-1].split(', ')]
-            vol, seg, _ = nii_loader(spath)
-            data, mask = get_patch(vol, seg, coordinate = coordinate, size = self.patch_size)
+
+            vol, seg, _ = self.loader(spath)
+            data, mask = self.path_extractor(vol, seg, 
+                                        coordinate = coordinate, 
+                                        size = self.patch_size)
 
             X.append(data)
             y.append(mask)

@@ -39,7 +39,10 @@ from tqdm import tqdm
 import pdb
 import os
 
-from ..helpers.helper import *
+from ..helpers import utils
+from ..helpers import postprocessing
+from ..helpers import preprocessing
+from .. import brainmask
 from os.path import expanduser
 home = expanduser("~")
 
@@ -73,7 +76,6 @@ class tumorSeg():
     def __init__(self, 
                     quick = False,
                     ants_path = bin_path):
-
 
         map_location = device
         #========================================================================================
@@ -141,25 +143,7 @@ class tumorSeg():
         self.ants_path = ants_path
 
 
-    def get_ants_mask(self, t1_path):
-        """
-		We make use of ants framework for generalized skull stripping
-		
-		t1_path: t1 volume path (str)
-		saves the mask in the same location as t1 data directory
-		returns: maskvolume (numpy uint8 type) 
-        """
-        mask_path = os.path.join(os.path.dirname(t1_path), 'mask.nii.gz')
-        os.system(self.ants_path +'ImageMath 3 '+ mask_path +' Normalize '+ t1_path)
-        os.system(self.ants_path +'ThresholdImage 3 '+ mask_path +' '+ mask_path +' 0.01 1')
-        os.system(self.ants_path +'ImageMath 3 '+ mask_path +' MD '+ mask_path +' 1')
-        os.system(self.ants_path +'ImageMath 3 '+ mask_path +' ME '+ mask_path +' 1')
-        os.system(self.ants_path +'CopyImageHeaderInformation '+ t1_path+' '+ mask_path +' '+ mask_path +' 1 1 1')
-        mask = np.uint8(nib.load(mask_path).get_data())
-        return mask
-
-
-    def get_localization(self, t1_v, t1c_v, t2_v, flair_v, brain_mask):
+    def get_localization(self, t1, t1ce, t2, flair, brain_mask):
         """
 		ABLnetwork output, finds the brain, Whole tumor region
 
@@ -170,18 +154,18 @@ class tumorSeg():
 		brain_mask = brain, whole tumor mask (numpy array, output of ANTs pieline)
         """
 
-        t1_v    = normalize(t1_v,    brain_mask)
-        t1c_v   = normalize(t1c_v,   brain_mask)
-        t2_v    = normalize(t2_v,    brain_mask)
-        flair_v = normalize(flair_v, brain_mask)
+        t1    = preprocessing.normalize(t1,    brain_mask)
+        t1ce  = preprocessing.normalize(t1ce,   brain_mask)
+        t2    = preprocessing.normalize(t2,    brain_mask)
+        flair = preprocessing.normalize(flair, brain_mask)
 
-        generated_output_logits = np.empty((self.ABLnclasses, flair_v.shape[0],flair_v.shape[1],flair_v.shape[2]))
+        generated_output_logits = np.empty((self.ABLnclasses, flair.shape[0], flair.shape[1], flair.shape[2]))
 
-        for slices in tqdm(range(flair_v.shape[2])):
-            flair_slice = np.transpose(flair_v[:,:,slices])
-            t2_slice    = np.transpose(t2_v[:,:,slices])
-            t1ce_slice  = np.transpose(t1c_v[:,:,slices])
-            t1_slice    = np.transpose(t1_v[:,:,slices])  
+        for slices in tqdm(range(flair.shape[2])):
+            flair_slice = np.transpose(flair[:,:,slices])
+            t2_slice    = np.transpose(t2[:,:,slices])
+            t1ce_slice  = np.transpose(t1ce[:,:,slices])
+            t1_slice    = np.transpose(t1[:,:,slices])  
                           
             array        = np.zeros((flair_slice.shape[0],flair_slice.shape[1],4))
             array[:,:,0] = flair_slice
@@ -196,9 +180,9 @@ class tumorSeg():
             logits            = self.ABLnet(transformed_array).detach().cpu().numpy()# 3 x 240 x 240  
             generated_output_logits[:,:,:, slices] = logits.transpose(0, 1, 3, 2)
 
-        final_pred  = apply_argmax_to_logits(generated_output_logits)
-        final_pred  = perform_postprocessing(final_pred)
-        final_pred  = adjust_classes_air_brain_tumour(np.uint8(final_pred))
+        final_pred  = utils.apply_argmax_to_logits(generated_output_logits)
+        final_pred  = postprocessing.connected_components(final_pred)
+        final_pred  = utils.adjust_classes_air_brain_tumour(np.uint8(final_pred))
 
         return np.uint8(final_pred)
 
@@ -213,10 +197,10 @@ class tumorSeg():
 		N = patch size during inference
         """
 
-        t1    = normalize(t1, brain_mask)
-        t1ce  = normalize(t1ce, brain_mask)
-        t2    = normalize(t2, brain_mask)
-        flair = normalize(flair, brain_mask)
+        t1    = preprocessing.normalize(t1,    brain_mask)
+        t1ce  = preprocessing.normalize(t1ce,   brain_mask)
+        t2    = preprocessing.normalize(t2,    brain_mask)
+        flair = preprocessing.normalize(flair, brain_mask)
 
         shape = t1.shape # to exclude batch_size
         final_prediction = np.zeros((self.T3Dnclasses, shape[0], shape[1], shape[2]))
@@ -240,7 +224,7 @@ class tumorSeg():
 
                         final_prediction[:, x:x+N, y:y+N, z:z+N] = pred[0]
 
-        final_prediction = convert5class_logitsto_4class(final_prediction)
+        final_prediction = utils.convert5class_logitsto_4class(final_prediction)
 
         return final_prediction
 
@@ -256,10 +240,10 @@ class tumorSeg():
 		prediction_size = mid inference patch size 
         """
 
-        t1    = normalize(t1, brain_mask)
-        t1ce  = normalize(t1ce, brain_mask)
-        t2    = normalize(t2, brain_mask)
-        flair = normalize(flair, brain_mask)
+        t1    = preprocessing.normalize(t1,    brain_mask)
+        t1ce  = preprocessing.normalize(t1ce,   brain_mask)
+        t2    = preprocessing.normalize(t2,    brain_mask)
+        flair = preprocessing.normalize(flair, brain_mask)
 
         shape = t1.shape # to exclude batch_size
         final_prediction = np.zeros((self.B3Dnclasses, shape[0], shape[1], shape[2]))
@@ -324,12 +308,15 @@ class tumorSeg():
 
                     high = Variable(torch.from_numpy(high)).to(self.device).float()
                     low1  = Variable(torch.from_numpy(low1)).to(self.device).float()
-                    pred  = torch.nn.functional.softmax(self.BNET3Dnet(high, low1, pred_size=prediction_size).detach().cpu())
+                    pred  = torch.nn.functional.softmax(self.BNET3Dnet(high, low1, 
+                                                pred_size=prediction_size).detach().cpu())
                     pred  = pred.numpy()
 
-                    final_prediction[:, x:x+prediction_size, y:y+prediction_size, z:z+prediction_size] = pred[0]
+                    final_prediction[:, x:x + prediction_size, 
+                                        y:y+prediction_size, 
+                                        z:z+prediction_size] = pred[0]
 
-        final_prediction = convert5class_logitsto_4class(final_prediction)
+        final_prediction = utils.convert5class_logitsto_4class(final_prediction)
 
         return final_prediction
 
@@ -389,10 +376,15 @@ class tumorSeg():
         flair = nib.load(flair_path).get_data()
         affine = nib.load(flair_path).affine
 
-        brain_mask = self.get_ants_mask(t2_path)
+        t1    = preprocessing.clip(t1)
+        t1ce  = preprocessing.clip(t1ce)
+        t2    = preprocessing.clip(t2)
+        flair = preprocessing.clip(flair)
+
+        brain_mask = brainmask.get_brain_mask(t2_path, ants_path = self.ants_path)
 
         mask  =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
-        # mask  =  np.swapaxes(mask,1, 0)
+        mask  =  np.swapaxes(mask,1, 0)
            
         if not self.quick:
             final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
@@ -401,13 +393,13 @@ class tumorSeg():
             final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
             final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
-            final_prediction_array       = np.array([final_predictionMnet_logits])
+            final_prediction_array        = np.array([final_predictionMnet_logits])
 
-        final_prediction_logits = combine_logits_AM(final_prediction_array)
-        final_pred              = postprocessing_pydensecrf(final_prediction_logits)
-        final_pred              = combine_mask_prediction(mask, final_pred)
-        final_pred              = perform_postprocessing(final_pred)
-        final_pred              = adjust_classes(final_pred)
+        final_prediction_logits = utils.combine_logits_AM(final_prediction_array)
+        final_pred              = postprocessing.densecrf(final_prediction_logits)
+        final_pred              = utils.combine_mask_prediction(mask, final_pred)
+        final_pred              = postprocessing.connected_components(final_pred)
+        final_pred              = utils.adjust_classes(final_pred)
 
         if save_path:
             os.makedirs(save_path, exist_ok=True)
@@ -429,36 +421,14 @@ class tumorSeg():
         """
 
         name  = path.split("/")[-1] + "_"
-        flair =  nib.load(os.path.join(path, name + 'flair.nii.gz')).get_data()
-        t1    =  nib.load(os.path.join(path, name + 't1.nii.gz')).get_data()
-        t1ce  =  nib.load(os.path.join(path, name + 't1ce.nii.gz')).get_data()
-        t2    =  nib.load(os.path.join(path, name + 't2.nii.gz')).get_data()
-        affine=  nib.load(os.path.join(path, name + 'flair.nii.gz')).affine
+        flair_path =  os.path.join(path, name + 'flair.nii.gz')
+        t1_path    =  os.path.join(path, name + 't1.nii.gz')
+        t1ce_path  =  os.path.join(path, name + 't1ce.nii.gz')
+        t2_path    =  os.path.join(path, name + 't2.nii.gz')
         
         print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") Working on: ", path)
 
-        brain_mask =  self.get_ants_mask(os.path.join(path, name + 't2.nii.gz'))
-        # brain_mask = get_brain_mask(t1)
-        mask       =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
-        mask       =  np.swapaxes(mask,1, 0)
-
-        if not self.quick:
-            final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
-            final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
-        else:
-            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
-            final_prediction_array       = np.array([final_predictionMnet_logits])
-
-        final_prediction_logits = combine_logits_AM(final_prediction_array)
-        final_pred              = postprocessing_pydensecrf(final_prediction_logits)
-        final_pred              = combine_mask_prediction(mask, final_pred)
-        final_pred              = perform_postprocessing(final_pred)
-        final_pred              = adjust_classes(final_pred)
-        if save:
-            save_volume(final_pred, affine, os.path.join(path, 'DeepBrainSeg_Prediction'))
-        return final_pred
+        return self.get_segmentation(t1_path, t2_path, t1ce_path, flair_path, path)
 
 
 

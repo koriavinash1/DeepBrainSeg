@@ -1,10 +1,36 @@
+#! /usr/bin/env python
+#  -*- coding: utf-8 -*-
+#
+# author: Avinash Kori
+# contact: koriavinash1@gmail.com
+# MIT License
+
+# Copyright (c) 2020 Avinash Kori
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import nibabel as nib
 import numpy as np
 import pandas as pd
 import os
 from tqdm import tqdm
-#from mha import *
-#from mha2 import *
+
 
 
 def npanalysis(path, predict_prefix, out_path, file_name=''):
@@ -96,30 +122,3 @@ def npanalysis(path, predict_prefix, out_path, file_name=''):
         t.loc[len(t)] = [Folder[iterator].split('/')[-2],WT_dice,TC_dice,AT_dice, classtc, class4]
     print (t.describe())
     t.to_csv(out_path+file_name,index=False)
-
-
-if __name__ == '__main__':
-    path = '/media/brats/MyPassport/Avinash/Kaminstas_2018/MICCAI_BraTS_2018_Data_Training/test/HGG'
-    predict_prefix = '3D_Tir_models_No_postprocessingAM.nii.gz'
-    out_path = './performance_csvs/'
-    file_name = '3D_Tir_models_No_postprocessingAM.csv'
-    npanalysis(path, predict_prefix, out_path, file_name)
-    print ("=============================== 3D_Tir_models_No_postprocessingAM ============================")
-
-    predict_prefix = '3D_Tir_models_class_wise_vol_thresh_postprocessingAM.nii.gz'
-    out_path = './performance_csvs/'
-    file_name = '3D_Tir_models_class_wise_vol_thresh_postprocessingAM.csv'
-    npanalysis(path, predict_prefix, out_path, file_name)
-    print ("=============================== 3D_Tir_models_class_wise_vol_thresh_postprocessingAM ============================")
-
-    predict_prefix = '3D_Tir_models_pydensecrf_postprocessingAM.nii.gz'
-    out_path = './performance_csvs/'
-    file_name = '3D_Tir_models_pydensecrf_postprocessingAM.csv'
-    npanalysis(path, predict_prefix, out_path, file_name)
-    print ("============================= 3D_Tir_models_pydensecrf_postprocessingAM ==============================")
-
-    predict_prefix = '3D_Tir_models_pydensecrf+volume_thresh_postprocessingAM.nii.gz'
-    out_path = './performance_csvs/'
-    file_name = '3D_Tir_models_pydensecrf+volume_thresh_postprocessingAM.csv'
-    npanalysis(path, predict_prefix, out_path, file_name)
-    print ("=============================== 3D_Tir_models_pydensecrf+volume_thresh_postprocessingAM ============================")

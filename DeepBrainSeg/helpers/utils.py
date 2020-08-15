@@ -1,6 +1,30 @@
-from scipy.ndimage import uniform_filter, maximum_filter
-import pydensecrf.densecrf as dcrf
-from pydensecrf.utils import unary_from_softmax, create_pairwise_bilateral, create_pairwise_gaussian
+#! /usr/bin/env python
+#  -*- coding: utf-8 -*-
+#
+# author: Avinash Kori
+# contact: koriavinash1@gmail.com
+# MIT License
+
+# Copyright (c) 2020 Avinash Kori
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import SimpleITK as sitk
 import numpy as np
 import nibabel as nib
@@ -73,25 +97,6 @@ def bbox(vol, pad = 18):
     return x_min, x_max, y_min, y_max, z_min, z_max        
 
 
-def perform_postprocessing(voxels, threshold=12000):
-    c,n = label(voxels)
-    nums = np.array([np.sum(c==i) for i in range(1, n+1)])
-    selected_components = nums>threshold
-    selected_components[np.argmax(nums)] = True
-    mask = np.zeros_like(voxels)
-    # print(selected_components.tolist())
-    for i,select in enumerate(selected_components):
-        if select:
-            mask[c==(i+1)]=1
-    return mask*voxels
-
-
-def normalize(img,mask):
-    mean=np.mean(img[mask!=0])
-    std=np.std(img[mask!=0])
-    return (img-mean)/std
-
-
 def adjust_classes_air_brain_tumour(volume):
     ""
     volume = np.uint8(volume)
@@ -135,14 +140,6 @@ def scale_every_slice_between_0_to_255(a):
     return normalized_a
     
 
-def class_wise_postprocessing(logits):
-    "logits dimension: nclasses, width, height, depth"
-    return_ = np.zeros_like(logits)
-    for class_ in range(logits.shape[0]):
-        return_[class_, :, :, :] = perform_postprocessing(logits[class_, :, :, :])
-
-    return return_
-
 def get_whole_tumor(data):
     return (data>0)*(data<4)
 
@@ -164,18 +161,6 @@ def get_dice_score(prediction, ground_truth):
     return wt, tc, et
 
 
-def postprocessing_pydensecrf(logits):
-    # probs of shape 3d image per class: Nb_classes x Height x Width x Depth
-    shape = logits.shape[1:]
-    new_image = np.empty(shape)
-    d = dcrf.DenseCRF(np.prod(shape), logits.shape[0])
-    U = unary_from_softmax(logits)
-    d.setUnaryEnergy(U)
-    feats = create_pairwise_gaussian(sdims=(1.0, 1.0, 1.0), shape=shape)
-    d.addPairwiseEnergy(feats, compat=3, kernel=dcrf.DIAG_KERNEL, normalization=dcrf.NORMALIZE_SYMMETRIC)
-    Q = d.inference(5) 
-    new_image = np.argmax(Q, axis=0).reshape((shape[0], shape[1],shape[2]))
-    return new_image
 
 def convert5class_logitsto_4class(logits):
     assert len(logits.shape) == 4
@@ -230,22 +215,4 @@ def combine_mask_prediction(mask, pred):
     mask[mask == 1]   = 2
     mask[pred == 1]   = 1
     mask[pred == 3]   = 3
-    return mask
-
-
-def get_ants_mask(ants_path, t1_path):
-    """
-    We make use of ants framework for generalized skull stripping
-    
-    t1_path: t1 volume path (str)
-    saves the mask in the same location as t1 data directory
-    returns: maskvolume (numpy uint8 type) 
-    """
-    mask_path = os.path.join(os.path.dirname(t1_path), 'mask.nii.gz')
-    os.system(ants_path +'ImageMath 3 '+ mask_path +' Normalize '+ t1_path)
-    os.system(ants_path +'ThresholdImage 3 '+ mask_path +' '+ mask_path +' 0.01 1')
-    os.system(ants_path +'ImageMath 3 '+ mask_path +' MD '+ mask_path +' 1')
-    os.system(ants_path +'ImageMath 3 '+ mask_path +' ME '+ mask_path +' 1')
-    os.system(ants_path +'CopyImageHeaderInformation '+ t1_path+' '+ mask_path +' '+ mask_path +' 1 1 1')
-    mask = np.uint8(nib.load(mask_path).get_data())
     return mask

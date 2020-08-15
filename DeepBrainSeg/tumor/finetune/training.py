@@ -1,3 +1,31 @@
+#! /usr/bin/env python
+#  -*- coding: utf-8 -*-
+#
+# author: Avinash Kori
+# contact: koriavinash1@gmail.com
+# MIT License
+
+# Copyright (c) 2020 Avinash Kori
+
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+
 import os
 import numpy as np
 import time
@@ -19,13 +47,10 @@ import random
 
 from tqdm import tqdm
 
-from dataGenerator import nii_loader, get_patch, Generator
-import sys
-sys.path.append('..')
-from models.modelTir3D import FCDenseNet57
-sys.path.append('../..')
-from helpers.helper import *
-from generateCSV import GenerateCSV
+from dataGenerator import Generator
+
+from .models.modelTir3D import FCDenseNet57
+from .feedBack import GenerateCSV
 
 from os.path import expanduser
 home = expanduser("~")
@@ -45,13 +70,10 @@ def _get_dice_score_(prediction, ground_truth):
     pred  = torch.exp(prediction)
     p     = np.uint8(np.argmax(pred.data.cpu().numpy(), axis=1))
     gt    = np.uint8(ground_truth.data.cpu().numpy())
-    wt, tc, et = [2*np.sum(func(p)*func(gt)) / (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
+    wt, tc, et = [2*np.sum(func(p)*func(gt)) ReduceLROnPlateauReduceLROnPlateau/ (np.sum(func(p)) + np.sum(func(gt))+1e-6) for func in masks]
     return wt, tc, et
 
 
-nclasses = 5
-confusion_meter = tnt.meter.ConfusionMeter(nclasses, normalized=True)
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 def to_one_hot(y, n_dims=None):
     """ Take integer y (tensor or variable) with n dims and convert it to 1-hot representation with n+1 dims. """
@@ -65,25 +87,6 @@ def to_one_hot(y, n_dims=None):
 
 
 
-def dice_loss(input,target):
-    """
-    input is a torch variable of size BatchxnclassesxHxW representing log probabilities for each class
-    target is of the groundtruth, shoud have same size as the input
-    """
-    # print (target.size())
-    target = to_one_hot(target, n_dims=nclasses).to(device)
-    # print (target.size(), input.size())
-
-    assert input.size() == target.size(), "Input sizes must be equal."
-    assert input.dim() == 5, "Input must be a 4D Tensor."
-
-    probs = F.softmax(input)
-
-    num   = (probs*target).sum() + 1e-3
-    den   = probs.sum() + target.sum() + 1e-3
-    dice  = 2.*(num/den)
-    return 1. - dice
-
 
 class Trainer():
 
@@ -91,10 +94,14 @@ class Trainer():
                     Validcsv_path = None,
                     data_root = None,
                     logs_root = None,
+                    nclasses = 5,
+                    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
                     antehoc_feedback = GenerateCSV,
                     gradual_unfreeze = True):
 
         # device = "cpu"
+        self.confusion_meter = tnt.meter.ConfusionMeter(nclasses, normalized=True)
+        self.device = device
 
         map_location = device
 
@@ -128,7 +135,33 @@ class Trainer():
         self.gradual_unfreeze = gradual_unfreeze
 
 
-    def train(self, nnClassCount, trBatchSize, DataGenerator, trMaxEpoch, timestampLaunch, checkpoint):
+    def dice_loss(self, input, target):
+        """
+        input is a torch variable of size BatchxnclassesxHxW 
+        representing log probabilities for each class
+        target is of the groundtruth, 
+        shoud have same size as the input
+        """
+
+        target = to_one_hot(target, n_dims=nclasses).to(self.device)
+
+        assert input.size() == target.size(), "Input sizes must be equal."
+        assert input.dim() == 5, "Input must be a 4D Tensor."
+
+        probs = F.softmax(input)
+
+        num   = (probs*target).sum() + 1e-3
+        den   = probs.sum() + target.sum() + 1e-3
+        dice  = 2.*(num/den)
+        return 1. - dice
+
+
+    def train(self, nnClassCount, 
+                    trBatchSize, 
+                    DataGenerator, 
+                    trMaxEpoch, 
+                    timestampLaunch, 
+                    checkpoint):
 
         #---- TRAIN THE NETWORK
         sub = pd.DataFrame()
@@ -199,20 +232,11 @@ class Trainer():
             self.epochTrain (self.Tir3Dnet, 
                             dataLoaderTrain, 
                             self.optimizer, 
-                            self.scheduler, 
-                            trMaxEpoch, 
-                            nnClassCount, 
-                            self.loss, 
-                            trBatchSize)
+                            self.loss)
 
             lossVal, losstensor, wt_dice_score, tc_dice_score, et_dice_score, _cm = self.epochVal (self.Tir3Dnet, 
                                                                                             dataLoaderVal, 
-                                                                                            self.optimizer, 
-                                                                                            self.scheduler, 
-                                                                                            trMaxEpoch, 
-                                                                                            nnClassCount, 
-                                                                                            self.loss, 
-                                                                                            trBatchSize)
+                                                                                            self.loss)
 
 
             currAcc = float(np.sum(np.eye(nclasses)*_cm.conf))/np.sum(_cm.conf)
@@ -307,7 +331,10 @@ class Trainer():
 
 
     #--------------------------------------------------------------------------------
-    def epochTrain (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, loss, trBatchSize):
+    def epochTrain (self, model, 
+                        dataLoader, 
+                        optimizer, 
+                        loss):
 
         phase='train'
         with torch.set_grad_enabled(phase == 'train'):
@@ -317,15 +344,15 @@ class Trainer():
                 data = torch.cat(data).float().squeeze(0)
                 # weight_map = torch.cat(weight_map).float().squeeze(0) / torch.max(weight_map)
 
-                varInput  = data.to(device)
-                varTarget = target.to(device)
-                # varMap    = weight_map.to(device)
+                varInput  = data.to(self.device)
+                varTarget = target.to(self.device)
+                # varMap    = weight_map.to(self.device)
 
                 varOutput = model(varInput)
                 
                 cross_entropy_lossvalue = loss(varOutput, varTarget)
                 # cross_entropy_lossvalue = torch.mean(cross_entropy_lossvalue)
-                dice_loss_ =  dice_loss(varOutput, varTarget)
+                dice_loss_ =  self.dice_loss(varOutput, varTarget)
                 lossvalue  = cross_entropy_lossvalue + dice_loss_
                 lossvalue = torch.mean(lossvalue)
 
@@ -334,7 +361,7 @@ class Trainer():
                 optimizer.step()
 
     #--------------------------------------------------------------------------------
-    def epochVal (self, model, dataLoader, optimizer, scheduler, epochMax, classCount, loss, trBatchSize):
+    def epochVal (self, model, dataLoader, loss):
 
         model.eval ()
 
@@ -352,9 +379,9 @@ class Trainer():
                 data = torch.cat(data).float().squeeze(0)
                 # weight_map = torch.cat(weight_map).float().squeeze(0) / torch.max(weight_map)
 
-                varInput  = data.to(device)
-                varTarget = target.to(device)
-                # varMap    = weight_map.to(device)
+                varInput  = data.to(self.device)
+                varTarget = target.to(self.device)
+                # varMap    = weight_map.to(self.device)
 
                 varOutput = model(varInput)
                 _, preds = torch.max(varOutput,1)
@@ -366,7 +393,7 @@ class Trainer():
 
                 cross_entropy_lossvalue = loss(varOutput, varTarget)
                 # cross_entropy_lossvalue = torch.mean(cross_entropy_lossvalue)
-                dice_loss_              =  dice_loss(varOutput, varTarget)
+                dice_loss_              =  self.dice_loss(varOutput, varTarget)
 
                 losstensor  =  cross_entropy_lossvalue + dice_loss_
 
@@ -382,6 +409,40 @@ class Trainer():
             losstensorMean = losstensorMean / lossValNorm
 
         return outLoss, losstensorMean, wt_dice_score, tc_dice_score, et_dice_score, confusion_meter
+
+
+    #--------------------------------------------------------------------------------
+    def infer (self, ckpt, rootpath, save_path, size = 64):
+        saved_parms=torch.load(ckpt)
+        self.Tir3Dnet.load_state_dict(saved_parms['state_dict'])
+
+        for patient in os.listdir(rootpath):
+            vol = self.loader(os.path.join(rootpath, patient))
+            shape = vol['t1'].shape # to exclude batch_size
+            final_prediction = np.zeros((nclasses, shape[0], shape[1], shape[2]))
+            x_min, x_max, y_min, y_max, z_min, z_max = 0, shape[0], 0, shape[1], 0, shape[2]
+            x_min, x_max, y_min, y_max, z_min, z_max = x_min, min(shape[0] - size, x_max), y_min, min(shape[1] - size, y_max), z_min, min(shape[2] - size, z_max)
+
+            with torch.no_grad():
+                for x in tqdm(range(x_min, x_max, size//2)):
+                    for y in range(y_min, y_max, size//2):
+                        for z in range(z_min, z_max, size//2):
+
+                            data = get_patch(vol, coordinate = (x, y, z), size = size)
+                            data = Variable(torch.from_numpy(data).unsqueeze(0)).to(device).float()
+                            pred = torch.nn.functional.softmax(model(data).detach().cpu())
+                            pred = pred.data.numpy()
+
+                            final_prediction[:, x:x + size, y:y + size, z:z + size] = pred[0]
+
+
+            final_prediction_logits = convert5class_logitsto_4class(final_prediction)
+            final_pred = postprocessing.densecrf(final_prediction_logits)
+            final_pred = postprocessing.connected_components(final_pred)
+            final_pred = utils.adjust_classes(final_pred)
+
+            # save final_prediction
+        pass
 
 
 
