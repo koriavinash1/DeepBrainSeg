@@ -457,7 +457,7 @@ class FineTuner():
 
 
 
-        for subject in tqdm(os.listdir(rootpath)):
+        for subject in tqdm([sub for sub in os.listdir(rootpath) if not os.path.isfile(os.path.join(rootpath, sub))]):
             spath = {}
             print (subject)
             subject_path = os.path.join(rootpath, subject)
@@ -471,7 +471,7 @@ class FineTuner():
             vol, _, affine = nii_loader(spath)
             logits = __get_logits__(vol)
             final_prediction_logits = utils.convert5class_logitsto_4class(logits)
-            # final_pred = np.argmax(final_prediction_logits, axis=0)
+            # final_pred = utils.apply_argmax_to_logits(final_prediction_logits)
             final_pred = postprocessing.densecrf(final_prediction_logits)
             final_pred = postprocessing.connected_components(final_pred)
             final_pred = utils.adjust_classes(final_pred)
