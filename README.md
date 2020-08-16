@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/koriavinash1/DeepBrainSeg.svg?branch=master)](https://travis-ci.org/koriavinash1/DeepBrainSeg)
 [![PyPI version](https://badge.fury.io/py/DeepBrainSeg.svg)](https://badge.fury.io/py/DeepBrainSeg)
+[![Documentation Status](https://readthedocs.org/projects/deepbrainseg/badge/?version=latest)](https://deepbrainseg.readthedocs.io/en/latest/?badge=latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
@@ -75,6 +76,8 @@ python3 DeepBrainSegUI.py
 ![overlay2](./imgs/overlay2.png)
 
 
+<hline>
+
 ## Python API usage
 
 ### Brain tumor segmentation
@@ -146,6 +149,8 @@ or
 extractor.all_features()
 ```
 
+<hline>
+
 ## Steps followed for tumor segmentation inference:
 
 + Our algorithm makes use of ANTs framework for mask generation. First call deepSeg class build ANTs framework locally in ~/.DeepBrainSeg
@@ -160,6 +165,8 @@ extractor.all_features()
 
 ### For training code please refer this [repo](https://github.com/koriavinash1/BraTs2018)
 
+<hline>
+
 ## Windows 10 Installation Guide
 
 ![image](./imgs/DeepBrainSegUI-running-on-Windows-10.gif)
@@ -171,5 +178,7 @@ extractor.all_features()
 
 Installation Guide: [here](./WINDOWS10_INSTALLATION_GUIDE.md)
 
+<hline>
+  
 ## Contact 
 * Avinash Kori (avin.kori.re@gmail.com)
