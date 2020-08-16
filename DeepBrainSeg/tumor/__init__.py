@@ -2,8 +2,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .Tester import *
-from .finetuning import *
 
 
 __license__ = 'MIT'
@@ -38,3 +36,8 @@ if (not os.path.exists(model_path)) or (os.listdir(model_path) == []):
                                     dest_path=os.path.join(model_path, 'ABL_CE_best_model_loss_based.pth.tar'))
 else :
 	print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Skipping Download Files already exists')
+
+
+
+from .Tester import *
+from .finetuning import *

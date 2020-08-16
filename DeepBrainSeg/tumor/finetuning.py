@@ -48,8 +48,7 @@ import random
 from tqdm import tqdm
 
 from .dataGenerator import Generator
-from .models.modelTir3D import FCDenseNet57
-from .feedBack import GenerateCSV
+from .feedBack import GenerateCSV3D
 from .dataGenerator import nii_loader, get_patch
 from ..helpers import utils
 from ..helpers import postprocessing
@@ -93,13 +92,12 @@ def to_one_hot(y, n_dims=None):
 
 class FineTuner():
 
-    def __init__(self, Traincsv_path = None, 
-                    Validcsv_path = None,
-                    data_root = None,
-                    logs_root = None,
+    def __init__(self,
+                    model, 
                     nclasses = 5,
+                    logs_root = None,
                     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-                    antehoc_feedback = GenerateCSV,
+                    antehoc_feedback = GenerateCSV3D,
                     gradual_unfreeze = True):
 
         # device = "cpu"
@@ -108,19 +106,14 @@ class FineTuner():
 
         map_location = device
 
-        self.T3Dnclasses = nclasses
-        self.model = FCDenseNet57(self.T3Dnclasses)
-        ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
-        ckpt = torch.load(ckpt_tir3D, map_location=map_location)
-        self.model.load_state_dict(ckpt['state_dict'])
-        print ("================================== TIRNET3D Loaded =================================")
+        self.nclasses = nclasses
+        self.model = model
         self.model = self.model.to(device)
 
         #-------------------- SETTINGS: OPTIMIZER & SCHEDULER
         self.optimizer = optim.Adam (self.model.parameters(), 
                                      lr=0.0001, betas=(0.9, 0.999), eps=1e-05, weight_decay=1e-5) 
         self.scheduler = ReduceLROnPlateau(self.optimizer, factor = 0.1, patience = 5, mode = 'min')
-        self.optimizer.load_state_dict(ckpt['optimizer'])
         
         
         #-------------------- SETTINGS: LOSS
@@ -131,10 +124,7 @@ class FineTuner():
         self.hardmine_every = 8
         self.hardmine_iteration = 1
         self.logs_root = logs_root
-        self.dataRoot = data_root
         self.antehoc_feedback = antehoc_feedback
-        self.Traincsv_path = Traincsv_path
-        self.Validcsv_path = Validcsv_path
         self.gradual_unfreeze = gradual_unfreeze
 
 
@@ -159,12 +149,16 @@ class FineTuner():
         return 1. - dice
 
 
-    def train(self, nnClassCount, 
+    def train(self, Traincsv_path, 
+                    Validcsv_path,
+                    data_root,
                     trBatchSize, 
-                    DataGenerator, 
                     trMaxEpoch, 
-                    timestampLaunch, 
-                    checkpoint):
+                    DataGenerator,
+                    patch_size = 64,
+                    patch_extractor = get_patch,
+                    loader = nii_loader, 
+                    checkpoint = None):
 
         #---- TRAIN THE NETWORK
         sub = pd.DataFrame()
@@ -191,24 +185,37 @@ class FineTuner():
         wt_dice_scores = []
         et_dice_scores = []
 
+        if not (os.path.exists(Traincsv_path) and os.path.exists(Validcsv_path)):
+            Traincsv_path, Validcsv_path = self.antehoc_feedback(self.model, 
+                                               data_root, 
+                                               self.logs_root, 
+                                               iteration = 0)
+
         for epochID in range (self.start_epoch, trMaxEpoch):
 
+
             if (epochID % self.hardmine_every) == (self.hardmine_every -1):
-                self.Traincsv_path = self.antehoc_feedback(self.model, 
-                                                   self.dataRoot, 
+                Traincsv_path = self.antehoc_feedback(self.model, 
+                                                   data_root, 
                                                    self.logs_root, 
                                                    iteration = self.hardmine_iteration)
                 self.hardmine_iteration += 1
 
             #-------------------- SETTINGS: DATASET BUILDERS
 
-            datasetTrain = DataGenerator(csv_path = self.Traincsv_path,
+            datasetTrain = DataGenerator(csv_path = Traincsv_path,
                                                 batch_size = trBatchSize,
                                                 hardmine_every = self.hardmine_every,
+                                                patch_size = patch_size,
+                                                patch_extractor = patch_extractor,
+                                                loader = loader,
                                                 iteration = (1 + epochID) % self.hardmine_every)
-            datasetVal  =   DataGenerator(csv_path = self.Validcsv_path,
+            datasetVal  =   DataGenerator(csv_path = Validcsv_path,
                                                 batch_size = trBatchSize,
                                                 hardmine_every = self.hardmine_every,
+                                                patch_size = patch_size,
+                                                patch_extractor = patch_extractor,
+                                                loader = loader,
                                                 iteration = 0)
 
             dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=1, shuffle=True,  num_workers=8, pin_memory=False)
@@ -421,12 +428,13 @@ class FineTuner():
         os.makedirs(save_path, exist_ok = True)
         saved_parms = torch.load(ckpt)
         self.model.load_state_dict(saved_parms['state_dict'])
+        self.model.eval()
 
         def __get_logits__(vol):
-            # for key in vol.keys():
-            #     vol[key] = np.pad(vol[key], ((size//4, size//4), (size//4, size//4), (size//4, size//4))) 
+            for key in vol.keys():
+                vol[key] = np.pad(vol[key], ((size//4, size//4), (size//4, size//4), (size//4, size//4))) 
             shape = vol['t1'].shape
-            final_prediction = np.zeros((self.T3Dnclasses, shape[0], shape[1], shape[2]))
+            final_prediction = np.zeros((self.nclasses, shape[0], shape[1], shape[2]))
             x_min, x_max, y_min, y_max, z_min, z_max = 0, shape[0], 0, shape[1], 0, shape[2]
             x_min, x_max, y_min, y_max, z_min, z_max = x_min, min(shape[0] - size, x_max), y_min, min(shape[1] - size, y_max), z_min, min(shape[2] - size, z_max)
 
@@ -437,14 +445,14 @@ class FineTuner():
                     for y in range(y_min, y_max, size//2):
                         for z in range(z_min, z_max, size//2):
 
-                            data = get_patch(vol, coordinate = (x, y, z), size = size)
+                            data, _ = get_patch(vol, coordinate = (x, y, z), size = size)
                             data = Variable(torch.from_numpy(data).unsqueeze(0)).to(self.device).float()
                             pred = torch.nn.functional.softmax(self.model(data).detach().cpu())
                             pred = pred.data.numpy()
-                            final_prediction[:, x:x + size, 
-                                            y:y + size, 
-                                            z:z + size] = pred[0] #[:, s:-s, s:-s, s:-s]
-            return final_prediction #[:, s:-s, s:-s, s:-s]
+                            final_prediction[:, x + s:x + 3*s, 
+                                            y + s:y + 3*s, 
+                                            z + s:z + 3*s] = pred[0][:, s:-s, s:-s, s:-s]
+            return final_prediction [:, s:-s, s:-s, s:-s]
 
 
 
@@ -464,7 +472,7 @@ class FineTuner():
             final_prediction_logits = utils.convert5class_logitsto_4class(logits)
             # final_pred = postprocessing.densecrf(final_prediction_logits)
             final_pred = np.argmax(final_prediction_logits, axis=0)
-            final_pred = postprocessing.class_wise_cc(final_pred)
+            final_pred = postprocessing.connected_components(final_pred)
             final_pred = utils.adjust_classes(final_pred)
 
             # save final_prediction

@@ -73,10 +73,11 @@ def nii_loader(paths):
         brain_mask = get_brain_mask(paths['t1'], ants_path)
 
     try:
+        print (paths['seg'])
         seg_mask = np.uint8(nib.load(paths['seg']).get_data())
-        seg_mask[(brain_mask != 0)*(sege_mask <= 0)] = 5
-        seg_mask[np.where(sege_mask==4)] = 3
-        seg_mask[np.where(sege_mask==5)] = 4  ## making an effort to make classes 0,1,2,3,4 rather than 0,1,2,4,5
+        seg_mask[(brain_mask != 0)*(seg_mask <= 0)] = 5
+        seg_mask[np.where(seg_mask==4)] = 3
+        seg_mask[np.where(seg_mask==5)] = 4  ## making an effort to make classes 0,1,2,3,4 rather than 0,1,2,4,5
     except:
         seg_mask = None
 
@@ -106,7 +107,7 @@ def get_patch(vol, seg = None, coordinate = (0,0,0), size = 64):
 	                               coordinate[2]:coordinate[2] + size]
     data[1,:,:,:] = vol['t2'][coordinate[0]:coordinate[0] + size,
 	                               coordinate[1]:coordinate[1] + size,
-	                          get_patch     coordinate[2]:coordinate[2] + size]
+	                               coordinate[2]:coordinate[2] + size]
     data[2,:,:,:] = vol['t1'][coordinate[0]:coordinate[0] + size,
 	                               coordinate[1]:coordinate[1] + size,
 	                               coordinate[2]:coordinate[2] + size]
@@ -119,7 +120,7 @@ def get_patch(vol, seg = None, coordinate = (0,0,0), size = 64):
 	                               coordinate[2]:coordinate[2] + size]
         return data, seg_mask
     except:
-        return data
+        return data, 0
 
 
 def multilabel_binarize(image_nD, nlabel):
@@ -241,11 +242,10 @@ class Generator(Dataset):
         X = []; y = []; edgeMap = []
 
 
-        p = np.random.uniform()
 
         s = len(self.classinfo.keys())
         for bi in range(self.batch_size):
-
+            p = np.random.uniform()
             for i, key in enumerate(self.classinfo.keys()):
                 if (bi%len(self.classinfo)) == i:
                     if p < self.classinfo[key]['hardmine_ratio']:

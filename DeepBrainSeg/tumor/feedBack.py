@@ -38,9 +38,6 @@ from .dataGenerator import nii_loader, get_patch
 from ..helpers import utils
 
 from tqdm import tqdm
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-# device = "cpu"
-ants_path = os.path.join('/opt/ANTs/bin/')
 
 
 def __get_whole_tumor__(data):
@@ -61,7 +58,11 @@ def _get_dice_score_(prediction, ground_truth):
     return wt, tc, et
 
 
-def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
+def GenerateCSV3D(model, 
+                dataset_path, 
+                logs_root, 
+                iteration = 0, 
+                device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")):
     model.eval()
 
     brainRegion = []; backgroundRegion = []; 
@@ -87,7 +88,7 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
                 for y in range(y_min, y_max, size//2):
                     for z in range(z_min, z_max, size//2):
 
-                        data = get_patch(vol, seg, coordinate = (x, y, z), size = size)
+                        data, mask = get_patch(vol, seg, coordinate = (x, y, z), size = size)
                         data = Variable(torch.from_numpy(data).unsqueeze(0)).to(device).float()
                         pred = torch.nn.functional.softmax(model(data).detach().cpu())
                         pred = pred.data.numpy()
@@ -121,7 +122,7 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
         validation_subjects = subjects[int(.8*len(subjects)):]
         data_splits = [training_subjects, validation_subjects]
     else :
-        training_subjects = pd.read_csv('../../../../Logs/csv/training.csv')['path'].values
+        training_subjects = pd.read_csv(os.path.join(logs_root, 'csv/training.csv'))['path'].values
         training_subjects = [sub.split('/')[-1] for sub in training_subjects]
         data_splits = [np.unique(training_subjects)]
 
@@ -163,25 +164,26 @@ def GenerateCSV(model, dataset_path, logs_root, iteration = 0):
         if i == 0: save_path = os.path.join(csv_root, 'training.csv')
         else: save_path = os.path.join(csv_root, 'validation.csv')
 
-        #dataFrame.to_csv(save_path)
-    return save_path
-
+        dataFrame.to_csv(save_path)
+        
+    if iteration == 0:
+        return os.path.join(csv_root, 'training.csv'), os.path.join(csv_root, 'validation.csv')
+    else:
+        return save_path
 
 
 if __name__ == '__main__':
     T3Dnclasses = 5
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    # device = "cpu"
-    ants_path = os.path.join('/opt/ANTs/bin/')
     from os.path import expanduser
     home = expanduser("~")
     ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
 
     from .models.modelTir3D import FCDenseNet57
     Tir3Dnet = FCDenseNet57(T3Dnclasses)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     ckpt = torch.load(ckpt_tir3D, map_location=device)
     Tir3Dnet.load_state_dict(ckpt['state_dict'])
     print ("================================== TIRNET3D Loaded =================================")
     Tir3Dnet = Tir3Dnet.to(device)
 
-    GenerateCSV(Tir3Dnet, '../../../MICCAI_BraTS2020_ValidationData', '../../../Logs/')
+    GenerateCSV(Tir3Dnet, '../../sample_volume/brats', '../../Logs/')

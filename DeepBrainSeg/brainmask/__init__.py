@@ -14,11 +14,23 @@ from google_drive_downloader import GoogleDriveDownloader as gdd
 from os.path import expanduser
 home = expanduser("~")
 import json, shutil
+import subprocess
 
 print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Ants Installation')
 
 ants_path = os.path.join(home, '.DeepBrainSeg/ants')
 try:
+	def __cmake_installation__():
+		print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Cmake Latest version installation')
+		os.system('wget https://github.com/Kitware/CMake/releases/download/v3.15.3/cmake-3.15.3.tar.gz')
+		os.system('tar xvzf cmake-3.15.3.tar.gz')
+		os.chdir('cmake-3.15.3')
+		os.system('./bootstrap')
+		os.system('make')
+		proc = subprocess.Popen('sudo make install', shell=True, stdin=None, stdout=None, executable="/bin/bash")
+		proc.wait()
+
+
 	current_path = os.getcwd()
 	if (not os.path.exists(ants_path)) or (os.listdir(ants_path) == []):
 		os.makedirs(os.path.join(ants_path, 'code')) 
@@ -28,25 +40,22 @@ try:
 		os.chdir(os.path.join(ants_path, 'bin/antsBuild'))
 
 		# CMake 3.15.3 installation
-		print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Cmake Latest version installation')
-		os.system('wget https://github.com/Kitware/CMake/releases/download/v3.15.3/cmake-3.15.3.tar.gz')
-		os.system('tar xvzf cmake-3.15.3.tar.gz')
-		os.chdir('cmake-3.15.3')
-		os.system('./bootstrap')
-		os.system('make')
-		os.system('sudo make install')
+		__cmake_installation__()
 
 		# ANTs installation
+		os.chdir(os.path.join(ants_path, 'bin/antsBuild'))
 		os.system('cmake '+os.path.join(ants_path, 'code/ANTs'))
 		os.system('make -j 2')
-
 		os.chdir(os.path.join(ants_path, 'bin/antsBuild/ANTS-build')) 
-		os.system('make install 2>&1 | tee install.log')
+		roc = subprocess.Popen('sudo make install 2>&1 | tee install.log', shell=True, stdin=None, stdout=None, executable="/bin/bash")
+		proc.wait()
 
 	os.chdir(current_path)
 except Exception as e: 
 	print(e)
+	print ("[INFO: DeepBrainSeg] (" + strftime("%a, %d %b %Y %H:%M:%S +0000", gmtime()) + ") " + 'Please provide sudo permissions and try agin to load brainmask')
 	shutil.rmtree(ants_path)
+
 
 
 bet_path = os.path.join(home, '.DeepBrainSeg/bets')

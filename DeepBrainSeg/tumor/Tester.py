@@ -161,11 +161,11 @@ class tumorSeg():
 
         generated_output_logits = np.empty((self.ABLnclasses, flair.shape[0], flair.shape[1], flair.shape[2]))
 
-        for slices in tqdm(range(flair.shape[2])):
-            flair_slice = np.transpose(flair[:,:,slices])
-            t2_slice    = np.transpose(t2[:,:,slices])
-            t1ce_slice  = np.transpose(t1ce[:,:,slices])
-            t1_slice    = np.transpose(t1[:,:,slices])  
+        for _slice_ in tqdm(range(flair.shape[2])):
+            flair_slice = np.transpose(flair[:,:,_slice_])
+            t2_slice    = np.transpose(t2[:,:,_slice_])
+            t1ce_slice  = np.transpose(t1ce[:,:,_slice_])
+            t1_slice    = np.transpose(t1[:,:,_slice_])  
                           
             array        = np.zeros((flair_slice.shape[0],flair_slice.shape[1],4))
             array[:,:,0] = flair_slice
@@ -174,17 +174,17 @@ class tumorSeg():
             array[:,:,3] = t1_slice
                 
 
-            transformed_array = torch.from_numpy(convert_image(array)).float()
+            transformed_array = torch.from_numpy(utils.convert_image(array)).float()
             transformed_array = transformed_array.unsqueeze(0) ## neccessary if batch size == 1
             transformed_array = transformed_array.to(self.device)
             logits            = self.ABLnet(transformed_array).detach().cpu().numpy()# 3 x 240 x 240  
-            generated_output_logits[:,:,:, slices] = logits.transpose(0, 1, 3, 2)
+            generated_output_logits[:,:,:, _slice_] = logits[0]
 
         final_pred  = utils.apply_argmax_to_logits(generated_output_logits)
-        final_pred  = postprocessing.class_wise_cc(final_pred)
+        final_pred  = postprocessing.connected_components(final_pred)
         final_pred  = utils.adjust_classes_air_brain_tumour(np.uint8(final_pred))
 
-        return np.uint8(final_pred)
+        return np.swapaxes(np.uint8(final_pred),1, 0)
 
 
     def inner_class_classification_with_logits_NCube(self, t1, 
@@ -204,7 +204,7 @@ class tumorSeg():
 
         shape = t1.shape # to exclude batch_size
         final_prediction = np.zeros((self.T3Dnclasses, shape[0], shape[1], shape[2]))
-        x_min, x_max, y_min, y_max, z_min, z_max = bbox(mask, pad = N)
+        x_min, x_max, y_min, y_max, z_min, z_max = utils.bbox(mask, pad = N)
         
         x_min, x_max, y_min, y_max, z_min, z_max = x_min, min(shape[0] - N, x_max), y_min, min(shape[1] - N, y_max), z_min, min(shape[2] - N, z_max)
         with torch.no_grad():
@@ -248,7 +248,7 @@ class tumorSeg():
         shape = t1.shape # to exclude batch_size
         final_prediction = np.zeros((self.B3Dnclasses, shape[0], shape[1], shape[2]))
 
-        x_min, x_max, y_min, y_max, z_min, z_max = bbox(mask, pad = prediction_size)
+        x_min, x_max, y_min, y_max, z_min, z_max = utils.bbox(mask, pad = prediction_size)
 
         # obtained by aspect ratio calculation
         high_res_size   = prediction_size + 16
@@ -337,10 +337,10 @@ class tumorSeg():
         transformSequence=transforms.Compose(transformList)
 
         generated_output = np.empty((self.Mnclasses,flair_volume.shape[0],flair_volume.shape[1],flair_volume.shape[2]))
-        for slices in tqdm(range(flair_volume.shape[2])):
-            flair_slice = scale_every_slice_between_0_to_255(np.transpose(flair_volume[:,:,slices]))
-            t2_slice    = scale_every_slice_between_0_to_255(np.transpose(t2_volume[:,:,slices]))
-            t1ce_slice  = scale_every_slice_between_0_to_255(np.transpose(t1ce_volume[:,:,slices]))
+        for _slice_ in tqdm(range(flair_volume.shape[2])):
+            flair_slice = utils.scale_every_slice_between_0_to_255(np.transpose(flair_volume[:,:,_slice_]))
+            t2_slice    = utils.scale_every_slice_between_0_to_255(np.transpose(t2_volume[:,:,_slice_]))
+            t1ce_slice  = utils.scale_every_slice_between_0_to_255(np.transpose(t1ce_volume[:,:,_slice_]))
 
             array        = np.zeros((flair_slice.shape[0],flair_slice.shape[1],3))
             array[:,:,0] = flair_slice
@@ -350,10 +350,10 @@ class tumorSeg():
             transformed_array = transformSequence(array)
             transformed_array = transformed_array.unsqueeze(0)
             transformed_array = transformed_array.to(self.device)
-            outs = torch.nn.functional.softmax(self.MNET2D(transformed_array).detach().cpu()).numpy()
-            outs = np.swapaxes(generated_output,1, 2)
-
-        return outs
+            pred = torch.nn.functional.softmax(self.MNET2D(transformed_array).detach().cpu())
+            pred = pred.numpy()
+            generated_output[:, :, :, _slice_] = pred[0]
+        return generated_output
 
 
     def get_segmentation(self, 
@@ -384,21 +384,22 @@ class tumorSeg():
         brain_mask = brainmask.get_brain_mask(t2_path, ants_path = self.ants_path)
 
         mask  =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
-        mask  =  np.swapaxes(mask,1, 0)
-           
+
+
         if not self.quick:
             final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
             final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
             final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair).transpose(0, 2, 1, 3)
             final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
         else:
-            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair)
+            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair).transpose(0, 2, 1, 3)
             final_prediction_array        = np.array([final_predictionMnet_logits])
 
         final_prediction_logits = utils.combine_logits_AM(final_prediction_array)
+        # final_pred              = utils.apply_argmax_to_logits(final_prediction_logits)
         final_pred              = postprocessing.densecrf(final_prediction_logits)
+        final_pred              = postprocessing.connected_components(final_pred)
         final_pred              = utils.combine_mask_prediction(mask, final_pred)
-        final_pred              = postprocessing.class_wise_cc(final_pred)
         final_pred              = utils.adjust_classes(final_pred)
 
         if save_path:
@@ -409,7 +410,7 @@ class tumorSeg():
 
 
     def get_segmentation_brats(self, 
-                                path, 
+                                path,
                                 save = True):
         """
 		Generates segmentation for the data in BraTs format

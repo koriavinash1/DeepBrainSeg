@@ -189,7 +189,7 @@ def combine_logits_AM(x):
     final = np.zeros_like(x[0])
     for ii in x:
         final = final + ii
-    return final * (1/len(x))
+    return final * (1./len(x))
 
 
 def combine_predictions_GM(x):
