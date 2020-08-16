@@ -136,7 +136,7 @@ class FineTuner():
         shoud have same size as the input
         """
 
-        target = to_one_hot(target, n_dims=nclasses).to(self.device)
+        target = to_one_hot(target, n_dims=self.nclasses).to(self.device)
 
         assert input.size() == target.size(), "Input sizes must be equal."
         assert input.dim() == 5, "Input must be a 4D Tensor."
@@ -239,17 +239,15 @@ class FineTuner():
 
 
             print (str(epochID)+"/" + str(trMaxEpoch) + "---")
-            self.epochTrain (self.model, 
-                            dataLoaderTrain, 
+            self.epochTrain ( dataLoaderTrain, 
                             self.optimizer, 
                             self.loss)
 
-            lossVal, losstensor, wt_dice_score, tc_dice_score, et_dice_score, _cm = self.epochVal (self.model, 
-                                                                                            dataLoaderVal, 
+            lossVal, losstensor, wt_dice_score, tc_dice_score, et_dice_score, _cm = self.epochVal (dataLoaderVal, 
                                                                                             self.loss)
 
 
-            currAcc = float(np.sum(np.eye(nclasses)*_cm.conf))/np.sum(_cm.conf)
+            currAcc = float(np.sum(np.eye(self.nclasses)*_cm.conf))/np.sum(_cm.conf)
             print (_cm.conf)
 
 
@@ -341,15 +339,17 @@ class FineTuner():
 
 
     #--------------------------------------------------------------------------------
-    def epochTrain (self, model, 
+    def epochTrain (self,
                         dataLoader, 
                         optimizer, 
                         loss):
 
+        self.model.train()
         phase='train'
         with torch.set_grad_enabled(phase == 'train'):
             for batchID, (data, seg, weight_map) in tqdm(enumerate (dataLoader)):
                 
+                if batchID == 5: break
                 target = torch.cat(seg).long().squeeze(0)
                 data = torch.cat(data).float().squeeze(0)
                 # weight_map = torch.cat(weight_map).float().squeeze(0) / torch.max(weight_map)
@@ -358,7 +358,7 @@ class FineTuner():
                 varTarget = target.to(self.device)
                 # varMap    = weight_map.to(self.device)
 
-                varOutput = model(varInput)
+                varOutput = self.model(varInput)
                 
                 cross_entropy_lossvalue = loss(varOutput, varTarget)
                 # cross_entropy_lossvalue = torch.mean(cross_entropy_lossvalue)
@@ -371,19 +371,20 @@ class FineTuner():
                 optimizer.step()
 
     #--------------------------------------------------------------------------------
-    def epochVal (self, model, dataLoader, loss):
+    def epochVal (self, dataLoader, loss):
 
-        model.eval ()
+        self.model.eval ()
 
         lossVal = 0
         lossValNorm = 0
 
         losstensorMean = 0
-        confusion_meter.reset()
+        self.confusion_meter.reset()
 
         wt_dice_score, tc_dice_score, et_dice_score = 0.0, 0.0, 0.0
         with torch.no_grad():
             for i, (data, seg, weight_map) in enumerate(dataLoader):
+                if i == 5: break
                 
                 target = torch.cat(seg).long().squeeze(0)
                 data = torch.cat(data).float().squeeze(0)
@@ -393,7 +394,7 @@ class FineTuner():
                 varTarget = target.to(self.device)
                 # varMap    = weight_map.to(self.device)
 
-                varOutput = model(varInput)
+                varOutput = self.model(varInput)
                 _, preds = torch.max(varOutput,1)
 
                 wt_, tc_, et_ = _get_dice_score_(varOutput, varTarget)
@@ -408,7 +409,7 @@ class FineTuner():
                 losstensor  =  cross_entropy_lossvalue + dice_loss_
 
                 losstensorMean += losstensor
-                confusion_meter.add(preds.data.view(-1), varTarget.data.view(-1))
+                self.confusion_meter.add(preds.data.view(-1), varTarget.data.view(-1))
                 lossVal += losstensor.item()
                 del losstensor, _, preds
                 del varOutput, varTarget, varInput
@@ -418,7 +419,7 @@ class FineTuner():
             outLoss = lossVal / lossValNorm
             losstensorMean = losstensorMean / lossValNorm
 
-        return outLoss, losstensorMean, wt_dice_score, tc_dice_score, et_dice_score, confusion_meter
+        return outLoss, losstensorMean, wt_dice_score, tc_dice_score, et_dice_score, self.confusion_meter
 
 
     #--------------------------------------------------------------------------------
@@ -470,8 +471,8 @@ class FineTuner():
             vol, _, affine = nii_loader(spath)
             logits = __get_logits__(vol)
             final_prediction_logits = utils.convert5class_logitsto_4class(logits)
-            # final_pred = postprocessing.densecrf(final_prediction_logits)
-            final_pred = np.argmax(final_prediction_logits, axis=0)
+            # final_pred = np.argmax(final_prediction_logits, axis=0)
+            final_pred = postprocessing.densecrf(final_prediction_logits)
             final_pred = postprocessing.connected_components(final_pred)
             final_pred = utils.adjust_classes(final_pred)
 

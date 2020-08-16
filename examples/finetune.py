@@ -31,13 +31,13 @@ finetune = FineTuner(model,
 
 
 
-# ckpt_path = '../../Logs/models/model_loss = 0.280981784279302_acc = 0.9003648718656386_best_loss.pth.tar'
 finetune.train('../Logs/csv/training.csv',
               '../Logs/csv/validation.csv',
               '../sample_volume/brats',
               trBatchSize = 4, 
               trMaxEpoch = 50, 
-              DataGenerator = Generator)
+              DataGenerator = Generator,
+              checkpoint = None)
 
 
 
@@ -45,4 +45,4 @@ finetune.train('../Logs/csv/training.csv',
 size = 64
 validation_set = '../sample_volume/valid'
 save_path = '../First_Validation_Set_Size_{}'.format(size)
-finetune.infer(ckpt_path, validation_set, save_path, size)
+finetune.infer(base_ckpt_path, validation_set, save_path, size)

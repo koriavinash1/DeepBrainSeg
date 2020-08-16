@@ -73,7 +73,6 @@ def nii_loader(paths):
         brain_mask = get_brain_mask(paths['t1'], ants_path)
 
     try:
-        print (paths['seg'])
         seg_mask = np.uint8(nib.load(paths['seg']).get_data())
         seg_mask[(brain_mask != 0)*(seg_mask <= 0)] = 5
         seg_mask[np.where(seg_mask==4)] = 3
@@ -190,7 +189,7 @@ class Generator(Dataset):
         self.nchannels = 4
         self.nclasses = 5
         self.loader = loader
-        self.patch_extractor = patch_extractor
+        self.patch_extractor = patch_extractor 
         self.csv = pd.read_csv(csv_path)
         self.batch_size = batch_size
         self.patch_size = patch_size
@@ -231,11 +230,11 @@ class Generator(Dataset):
         'Generate one batch of data'
         # Generate indexes of the batch
 
-        X, y, Emap = self.__data_generation(index)
+        X, y, Emap = self.__data_generation__(index)
         return X, y, Emap
 
   
-    def __data_generation(self, index):
+    def __data_generation__(self, index):
         'Generates data containing batch_size samples' # X : (n_samples, *dim, n_channels)
         # Initialization
         self.image_size = (self.patch_size, self.patch_size, self.patch_size)
@@ -265,7 +264,7 @@ class Generator(Dataset):
             coordinate = [int(co) for co in subject['coordinate'][1:-1].split(', ')]
 
             vol, seg, _ = self.loader(spath)
-            data, mask = self.path_extractor(vol, seg, 
+            data, mask = self.patch_extractor(vol, seg, 
                                         coordinate = coordinate, 
                                         size = self.patch_size)
 
