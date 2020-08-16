@@ -7,7 +7,8 @@ config = {
     'DBS_ANTS': False,
 }
 
-with open(os.path.join(home, ".DeepBrainSeg/config.json", "w")) as write_file:
+os.makedirs(os.path.join(home, ".DeepBrainSeg"), exist_ok=True)
+with open(os.path.join(home, ".DeepBrainSeg/config.json"), "w") as write_file:
     json.dump(config, write_file)
 
 
