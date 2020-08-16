@@ -172,4 +172,4 @@ extractor.all_features()
 Installation Guide: [here](./WINDOWS10_INSTALLATION_GUIDE.md)
 
 ## Contact 
-* Avinash Kori (koriavinash1@gmail.com)
+* Avinash Kori (avin.kori.re@gmail.com)
