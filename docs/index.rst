@@ -19,3 +19,8 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+
+Readme File
+===========
+
+.. mdinclude:: ../README.md
