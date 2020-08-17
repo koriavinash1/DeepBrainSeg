@@ -37,14 +37,19 @@ from skimage.morphology import erosion, dilation
 
 def densecrf(logits):
     """
-    applies coditional random fields on predictions
-    The idea is consider the nbr voxels in making 
-    class prediction of current pixel
-    
-    refer CRF and MRF papers for more theoretical idea
+        applies coditional random fields on predictions
+        The idea is consider the nbr voxels in making 
+        class prediction of current pixel
+        
+        refer CRF and MRF papers for more theoretical idea
 
-    logits: Nb_classes x Height x Width x Depth
+        args
+            logits: Nb_classes x Height x Width x Depth
+
+        returns
+            tensor of size Height x Width x Depth
     """
+
     shape = logits.shape[1:]
     new_image = np.empty(shape)
     d = dcrf.DenseCRF(np.prod(shape), logits.shape[0])
@@ -58,12 +63,16 @@ def densecrf(logits):
 
 def connected_components(voxels, threshold=12000):
     """
-    This clusters entire segmentations into multiple clusters
-    and considers significant cluster for further analysis
+        This clusters entire segmentations into multiple clusters
+        and considers significant cluster for further analysis
 
-    voxels: np.uint8 height x width x depth
-    threshold: number of pixels in cluster to 
-        consider it as significant
+        args
+            voxels: np.uint8 height x width x depth
+            threshold: number of pixels in cluster to 
+                consider it as significant
+
+        returns
+            tensor with same size as voxels
     """
 
     c,n = label(voxels)
@@ -80,9 +89,12 @@ def connected_components(voxels, threshold=12000):
 
 def class_wise_cc(logits):
     """
-    Applies connected components on class wise slices
-    
-    logits dimension: nclasses, width, height, depth
+        Applies connected components on class wise slices
+        
+        args
+            logits dimension: nclasses, width, height, depth
+        returns
+            tensor of same size as logits (uint8)
     """
     return_ = np.zeros_like(logits)
     for class_ in range(logits.shape[0]):

@@ -64,14 +64,14 @@ class Coregistration(object):
 
     def resize_sitk_3D(self, image_array, outputSize=None, interpolator=sitk.sitkLinear):
         """
-        Resample 3D images Image:
-        For Labels use nearest neighbour
-        For image use
-        sitkNearestNeighbor = 1,
-        sitkLinear = 2,
-        sitkBSpline = 3,
-        sitkGaussian = 4,
-        sitkLabelGaussian = 5,
+            Resample 3D images Image:
+            For Labels use nearest neighbour
+            For image use
+            sitkNearestNeighbor = 1,
+            sitkLinear = 2,
+            sitkBSpline = 3,
+            sitkGaussian = 4,
+            sitkLabelGaussian = 5,
         """
         image = image_array
         inputSize = image.GetSize()
@@ -103,9 +103,9 @@ class Coregistration(object):
                             save_transform=True,
                             isotropic=True):
         """
-        moving_images : {'key1': path1, 'key2': path2}
-        fixed_image :t1c path
-        save_path: save path 
+            moving_images : {'key1': path1, 'key2': path2}
+            fixed_image :t1c path
+            save_path: save path 
         """
         fixed_name = fixed_image.split('/').pop().split('.')[0]
         fixed_image =  sitk.ReadImage(fixed_image, sitk.sitkFloat32)

@@ -34,6 +34,12 @@ import dicom2nifti.settings as settings
 
 def singleDicom2nifti(input_path, output_path, verbose=False):
     """
+        This function hepls in converting the .dcm slices together
+        and create nii file
+
+        input_path: path to the folder containing .dcm files
+        output_path: path to save .nii files
+        verbose: bool, to print logs 
     """
     if not os.path.exists(input_path): raise ValueError("Path doesn't exist")
     
@@ -51,6 +57,7 @@ def convertDcm2nifti(path_json, output_dir, verbose=False):
     """
         path_json: {'key1': path1, 'key2': path2}
         output_dir: nifty save dir path
+        verbose: bool, to print logs 
     """
 
     for key in path_json.keys():

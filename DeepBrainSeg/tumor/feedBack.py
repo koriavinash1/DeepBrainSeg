@@ -63,6 +63,12 @@ def GenerateCSV3D(model,
                 logs_root, 
                 iteration = 0, 
                 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")):
+    """
+        Function is generate feedback csv which will be used 
+        in hardminning and data generator
+        custom function
+        
+    """
     model.eval()
 
     brainRegion = []; backgroundRegion = []; 

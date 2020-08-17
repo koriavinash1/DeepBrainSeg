@@ -44,20 +44,18 @@ ants_path = os.path.join('/opt/ANTs/bin/')
 
 def nii_loader(paths):
     """
-    Now given a path, we have to load
-    1) High res version of flair,t2,t1 and t1c
-    2) Low  res version of flair,t2,t1 and t1c
-    3) If the path comprises of "Non" then make an empty 9x9x9 array
-    4) if not, load the segmentation mask too.
+        Loads entire patient data i.e volumes with all 
+        the modalities provided 
 
-
-    Accepts
-    1) path of data
-
-    Returns
-    1) a 4D high resolution data
-    2) a 4d low resolution data
-    3) Segmentation
+        args
+            paths: json with ['flair', 't1', 't2', 't1ce'] keys,
+                with optional keys of ['mask', 'seg']
+        returns
+            data: json with ['flair', 't1', 't2', 't1ce'] keys,
+                and their respective data in the form of numpy arrays
+            seg_mask: segmentation mask uint8 data 
+                if paths include 'seg' key else returns None
+            affine: data affine (which will be used in saving)
     """
 
     flair = nib.load(paths['flair']).get_data()
@@ -99,6 +97,20 @@ def nii_loader(paths):
 
 
 def get_patch(vol, seg = None, coordinate = (0,0,0), size = 64):
+    """
+        extracts patches from volume and segmentaion
+        based on provided coordinate and size
+
+        args
+            vol: json with data volumes
+            seg: segmentation mask
+            coordinate: tuple (<int< of len 3) x, y, x of right top corner
+            size: int patch size
+
+        returns
+            data patch and segmentation patch if seg is None 
+            returns data patch and None 
+    """
     data = np.zeros((4, size, size, size))
 
     data[0,:,:,:] = vol['flair'][coordinate[0]:coordinate[0] + size,
@@ -119,11 +131,12 @@ def get_patch(vol, seg = None, coordinate = (0,0,0), size = 64):
 	                               coordinate[2]:coordinate[2] + size]
         return data, seg_mask
     except:
-        return data, 0
+        return data, None
 
 
 def multilabel_binarize(image_nD, nlabel):
     """
+        One hot conversion
     """
     labels = range(nlabel)
     out_shape = (len(labels),) + image_nD.shape
@@ -137,6 +150,7 @@ def multilabel_binarize(image_nD, nlabel):
 selem = morph.disk(1)
 def getEdge(label):
     """
+        enhances the edge information
     """
     out = np.float32(np.zeros(label.shape))
     for i in range(label.shape[0]):
@@ -176,6 +190,9 @@ def getEdgeEnhancedWeightMap_3D(label, label_ids =[0,1,2,3,4], scale=1, edgescal
 
 class Generator(Dataset):
     """
+        Data generator object used in pytorch dataloaders
+
+        args
     """
 
     def __init__(self, csv_path, 

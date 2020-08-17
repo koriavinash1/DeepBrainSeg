@@ -35,7 +35,6 @@ from tqdm import tqdm
 
 def npanalysis(path, predict_prefix, out_path, file_name=''):
 
-    # path = '/media/bmi/varkey/new_n4/Recon_2013_data/N4_zscore_testing_t1_t1c_hist_match/'
     # predict_prefix = 'new_n4_ub_zc_log'
     if file_name=='':
         file_name=predict_prefix+'.csv'

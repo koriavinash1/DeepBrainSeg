@@ -78,7 +78,10 @@ def _get_dice_score_(prediction, ground_truth):
 
 
 def to_one_hot(y, n_dims=None):
-    """ Take integer y (tensor or variable) with n dims and convert it to 1-hot representation with n+1 dims. """
+    """ 
+        Take integer y (tensor or variable) with n dims
+         and convert it to 1-hot representation with n+1 dims.
+    """
     y_tensor  = y.data if isinstance(y, Variable) else y
     y_tensor  = y_tensor.type(torch.LongTensor).view(-1, 1)
     n_dims    = n_dims if n_dims is not None else int(torch.max(y_tensor)) + 1
@@ -91,6 +94,13 @@ def to_one_hot(y, n_dims=None):
 
 
 class FineTuner():
+    """
+        Framework for finetuning any network
+        with dynamic hardmining and gradual 
+        unfreezing of weights.
+
+        
+    """
 
     def __init__(self,
                     model, 
@@ -130,10 +140,10 @@ class FineTuner():
 
     def dice_loss(self, input, target):
         """
-        input is a torch variable of size BatchxnclassesxHxW 
-        representing log probabilities for each class
-        target is of the groundtruth, 
-        shoud have same size as the input
+            input is a torch variable of size BatchxnclassesxHxW 
+            representing log probabilities for each class
+            target is of the groundtruth, 
+            shoud have same size as the input
         """
 
         target = to_one_hot(target, n_dims=self.nclasses).to(self.device)
