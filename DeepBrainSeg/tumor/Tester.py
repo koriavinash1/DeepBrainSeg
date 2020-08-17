@@ -39,10 +39,12 @@ from tqdm import tqdm
 import pdb
 import os
 
+from . import maybe_download
 from ..helpers import utils
 from ..helpers import postprocessing
 from ..helpers import preprocessing
 from .. import brainmask
+
 from os.path import expanduser
 home = expanduser("~")
 
@@ -80,10 +82,10 @@ class tumorSeg():
         map_location = device
         #========================================================================================
 
-        ckpt_tir2D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_2D_FC57_best_loss.pth.tar')
-        ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
-        ckpt_BNET3D   = os.path.join(home, '.DeepBrainSeg/BestModels/BrainNet_3D_best_acc.pth.tar')
-        ckpt_ABL      = os.path.join(home, '.DeepBrainSeg/BestModels/ABL_CE_best_model_loss_based.pth.tar')
+        ckpt_tir2D    = os.path.join(home, '.DeepBrainSeg/BestModels/tumor_TramisuFC57_2D.pth.tar')
+        ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/tumor_Tramisu_FC57_3D.pth.tar')
+        ckpt_BNET3D   = os.path.join(home, '.DeepBrainSeg/BestModels/tumor_BrainNet_3D.pth.tar')
+        ckpt_ABL      = os.path.join(home, '.DeepBrainSeg/BestModels/tumor_ABL_2D.pth.tar')
 
         #========================================================================================
         # air brain lesion segmentation..............
@@ -91,6 +93,7 @@ class tumorSeg():
 
         self.ABLnclasses = 3
         self.ABLnet = FCDenseNet103(n_classes = self.ABLnclasses) ## intialize the graph
+        maybe_download(ckpt_ABL)
         saved_parms=torch.load(ckpt_ABL, map_location=map_location) 
         self.ABLnet.load_state_dict(saved_parms['state_dict']) ## fill the model with trained params
         print ("================================ ABLNET2D Loaded ==============================")
@@ -103,6 +106,7 @@ class tumorSeg():
         from .models.modelTir2D import FCDenseNet57
         self.Mnclasses = 4
         self.MNET2D = FCDenseNet57(self.Mnclasses)
+        maybe_download(ckpt_tir2D)
         ckpt = torch.load(ckpt_tir2D, map_location=map_location)
         self.MNET2D.load_state_dict(ckpt['state_dict'])
         print ("================================ MNET2D Loaded ================================")
@@ -117,6 +121,7 @@ class tumorSeg():
             from .models.model3DBNET import BrainNet_3D_Inception
             self.B3Dnclasses = 5
             self.BNET3Dnet = BrainNet_3D_Inception()
+            maybe_download(ckpt_BNET3D)
             ckpt = torch.load(ckpt_BNET3D, map_location=map_location)
             self.BNET3Dnet.load_state_dict(ckpt['state_dict'])
             print ("================================ KAMNET3D Loaded ==============================")
@@ -129,6 +134,7 @@ class tumorSeg():
 
             self.T3Dnclasses = 5
             self.Tir3Dnet = FCDenseNet57(self.T3Dnclasses)
+            maybe_download(ckpt_tir3D)
             ckpt = torch.load(ckpt_tir3D, map_location=map_location)
             self.Tir3Dnet.load_state_dict(ckpt['state_dict'])
             print ("=============================== TIRNET2D Loaded ==============================")
@@ -389,8 +395,8 @@ class tumorSeg():
         if not self.quick:
             final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
             final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair).transpose(0, 2, 1, 3)
-            final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits, final_predictionMnet_logits])
+            # final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair).transpose(0, 2, 1, 3)
+            final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits]) #, final_predictionMnet_logits])
         else:
             final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair).transpose(0, 2, 1, 3)
             final_prediction_array        = np.array([final_predictionMnet_logits])

@@ -1,6 +1,5 @@
 # DeepBrainSeg
 
-[![Build Status](https://travis-ci.org/koriavinash1/DeepBrainSeg.svg?branch=master)](https://travis-ci.org/koriavinash1/DeepBrainSeg)
 [![PyPI version](https://badge.fury.io/py/DeepBrainSeg.svg)](https://badge.fury.io/py/DeepBrainSeg)
 [![Documentation Status](https://readthedocs.org/projects/deepbrainseg/badge/?version=latest)](https://deepbrainseg.readthedocs.io/en/latest/?badge=latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

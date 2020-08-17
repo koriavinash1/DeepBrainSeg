@@ -39,7 +39,7 @@ setuptools.setup(
          'pyradiomics==3.0',
          'scikit-image==0.15',
     	 'dicom2nifti==2.2.10',
-         'googledrivedownloader==0.4',
+         'wget',
          ],
      classifiers=[
          "Programming Language :: Python :: 3.5",
