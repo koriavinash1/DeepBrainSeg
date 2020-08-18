@@ -10,7 +10,6 @@ __email__ = ['koriavinash1@gmail.com']
 import os
 import sys
 from time import gmtime, strftime
-from google_drive_downloader import GoogleDriveDownloader as gdd
 from os.path import expanduser
 home = expanduser("~")
 import json

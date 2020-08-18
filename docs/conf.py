@@ -21,7 +21,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../'))
-sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('../..'))
 
 
 # -- General configuration ------------------------------------------------
@@ -175,6 +175,5 @@ texinfo_documents = [
      author, 'DeepBrainSeg', 'One line description of project.',
      'Miscellaneous'),
 ]
-
 
 

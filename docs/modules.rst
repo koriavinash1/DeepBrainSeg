@@ -5,3 +5,5 @@ DeepBrainSeg
    :maxdepth: 4
 
    DeepBrainSeg
+   setup
+   ui

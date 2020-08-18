@@ -12,7 +12,7 @@ with open(os.path.join(home, ".DeepBrainSeg/config.json"), "w") as write_file:
     json.dump(config, write_file)
 
 
-with open("README.md", "r") as fh:
+with open("./README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
