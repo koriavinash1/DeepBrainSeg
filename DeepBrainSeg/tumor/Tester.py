@@ -49,9 +49,6 @@ from os.path import expanduser
 home = expanduser("~")
 
 #========================================================================================
-# prediction functions.....................
-bin_path = os.path.join('/opt/ANTs/bin/')
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class tumorSeg():
     """
         class performs segmentation for a given sequence of patient data.
@@ -63,9 +60,7 @@ class tumorSeg():
                 Air Brain Lesson model (2D model, 103 layered)
             2. BNet3Dnet 3D network for inner class classification
                 Dual Path way network
-            3. MNet2D 57 layered convolutional network for inner class
-                classification
-            4. Tir3Dnet 57 layered 3D convolutional network for inner class 
+            3. Tir3Dnet 57 layered 3D convolutional network for inner class 
                 classification
         more on training details and network information:
         (https://link.springer.com/chapter/10.1007/978-3-030-11726-9_43<Paste>)
@@ -77,12 +72,11 @@ class tumorSeg():
     """
     def __init__(self, 
                     quick = False,
-                    ants_path = bin_path):
+                    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")):
 
         map_location = device
         #========================================================================================
 
-        ckpt_tir2D    = os.path.join(home, '.DeepBrainSeg/BestModels/tumor_TramisuFC57_2D.pth.tar')
         ckpt_tir3D    = os.path.join(home, '.DeepBrainSeg/BestModels/tumor_Tramisu_FC57_3D.pth.tar')
         ckpt_BNET3D   = os.path.join(home, '.DeepBrainSeg/BestModels/tumor_BrainNet_3D.pth.tar')
         ckpt_ABL      = os.path.join(home, '.DeepBrainSeg/BestModels/tumor_ABL_2D.pth.tar')
@@ -101,19 +95,17 @@ class tumorSeg():
         self.ABLnet = self.ABLnet.to(device)
 
         #========================================================================================
+        # Tir3D model...................
+        from .models.modelTir3D import FCDenseNet57
 
-        # Tir2D net.......................
-        from .models.modelTir2D import FCDenseNet57
-        self.Mnclasses = 4
-        self.MNET2D = FCDenseNet57(self.Mnclasses)
-        maybe_download(ckpt_tir2D)
-        ckpt = torch.load(ckpt_tir2D, map_location=map_location)
-        self.MNET2D.load_state_dict(ckpt['state_dict'])
-        print ("================================ MNET2D Loaded ================================")
-        self.MNET2D.eval()
-        self.MNET2D = self.MNET2D.to(device)
-
-        #========================================================================================
+        self.T3Dnclasses = 5
+        self.Tir3Dnet = FCDenseNet57(self.T3Dnclasses)
+        maybe_download(ckpt_tir3D)
+        ckpt = torch.load(ckpt_tir3D, map_location=map_location)
+        self.Tir3Dnet.load_state_dict(ckpt['state_dict'])
+        print ("=============================== TIRNET2D Loaded ==============================")
+        self.Tir3Dnet.eval()
+        self.Tir3Dnet = self.Tir3Dnet.to(device)
 
         if not quick:
             
@@ -128,25 +120,11 @@ class tumorSeg():
             self.BNET3Dnet.eval()
             self.BNET3Dnet = self.BNET3Dnet.to(device)
 
-            #========================================================================================
-            # Tir3D model...................
-            from .models.modelTir3D import FCDenseNet57
-
-            self.T3Dnclasses = 5
-            self.Tir3Dnet = FCDenseNet57(self.T3Dnclasses)
-            maybe_download(ckpt_tir3D)
-            ckpt = torch.load(ckpt_tir3D, map_location=map_location)
-            self.Tir3Dnet.load_state_dict(ckpt['state_dict'])
-            print ("=============================== TIRNET2D Loaded ==============================")
-            self.Tir3Dnet.eval()
-            self.Tir3Dnet = self.Tir3Dnet.to(device)
-
 
         #========================================================================================
 
         self.device = device
         self.quick = quick
-        self.ants_path = ants_path
 
 
     def get_localization(self, t1, t1ce, t2, flair, brain_mask):
@@ -184,13 +162,13 @@ class tumorSeg():
             transformed_array = transformed_array.unsqueeze(0) ## neccessary if batch size == 1
             transformed_array = transformed_array.to(self.device)
             logits            = self.ABLnet(transformed_array).detach().cpu().numpy()# 3 x 240 x 240  
-            generated_output_logits[:,:,:, _slice_] = logits[0]
+            generated_output_logits[:,:,:, _slice_] = logits.transpose(0, 1, 3, 2)
 
         final_pred  = utils.apply_argmax_to_logits(generated_output_logits)
-        final_pred  = postprocessing.connected_components(final_pred)
+        final_pred  = postprocessing.class_wise_cc(final_pred)
         final_pred  = utils.adjust_classes_air_brain_tumour(np.uint8(final_pred))
 
-        return np.swapaxes(np.uint8(final_pred),1, 0)
+        return np.uint8(final_pred)
 
 
     def inner_class_classification_with_logits_NCube(self, t1, 
@@ -208,10 +186,20 @@ class tumorSeg():
         t2    = preprocessing.standardize(t2,    brain_mask)
         flair = preprocessing.standardize(flair, brain_mask)
 
-        shape = t1.shape # to exclude batch_size
+        vol = {}
+        vol['t1'] = t1
+        vol['t2'] = t2
+        vol['t1ce'] = t1ce 
+        vol['flair'] = flair
+
+        s = N//4
+        for key in vol.keys():
+            vol[key] = np.pad(vol[key], ((s, s), (s, s), (s,s))) 
+          
+        shape = vol['t1'].shape # to exclude batch_size
         final_prediction = np.zeros((self.T3Dnclasses, shape[0], shape[1], shape[2]))
-        x_min, x_max, y_min, y_max, z_min, z_max = utils.bbox(mask, pad = N)
-        
+
+        x_min, x_max, y_min, y_max, z_min, z_max = 0, shape[0], 0, shape[1], 0, shape[2]
         x_min, x_max, y_min, y_max, z_min, z_max = x_min, min(shape[0] - N, x_max), y_min, min(shape[1] - N, y_max), z_min, min(shape[2] - N, z_max)
         with torch.no_grad():
             for x in tqdm(range(x_min, x_max, N//2)):
@@ -219,18 +207,18 @@ class tumorSeg():
                     for z in range(z_min, z_max, N//2):
                         high = np.zeros((1, 4, N, N, N))
 
-                        high[0, 0, :, :, :] = flair[x:x+N, y:y+N, z:z+N]
-                        high[0, 1, :, :, :] = t2[x:x+N, y:y+N, z:z+N]
-                        high[0, 2, :, :, :] = t1[x:x+N, y:y+N, z:z+N]
-                        high[0, 3, :, :, :] = t1ce[x:x+N, y:y+N, z:z+N]
+                        high[0, 0, :, :, :] = vol['flair'][x:x+N, y:y+N, z:z+N]
+                        high[0, 1, :, :, :] = vol['t2'][x:x+N, y:y+N, z:z+N]
+                        high[0, 2, :, :, :] = vol['t1'][x:x+N, y:y+N, z:z+N]
+                        high[0, 3, :, :, :] = vol['t1ce'][x:x+N, y:y+N, z:z+N]
 
                         high = Variable(torch.from_numpy(high)).to(self.device).float()
                         pred = torch.nn.functional.softmax(self.Tir3Dnet(high).detach().cpu())
                         pred = pred.data.numpy()
 
-                        final_prediction[:, x:x+N, y:y+N, z:z+N] = pred[0]
+                        final_prediction[:, x+s:x+3*s, y+s:y+3*s, z+s:z+3*s] = pred[0][:, s:-s, s:-s, s:-s]
 
-        final_prediction = utils.convert5class_logitsto_4class(final_prediction)
+        final_prediction = final_prediction[:, s:-s, s:-s, s:-s]
 
         return final_prediction
 
@@ -254,7 +242,7 @@ class tumorSeg():
         shape = t1.shape # to exclude batch_size
         final_prediction = np.zeros((self.B3Dnclasses, shape[0], shape[1], shape[2]))
 
-        x_min, x_max, y_min, y_max, z_min, z_max = utils.bbox(mask, pad = prediction_size)
+        x_min, x_max, y_min, y_max, z_min, z_max = utils.bbox(mask, pad = 2*prediction_size)
 
         # obtained by aspect ratio calculation
         high_res_size   = prediction_size + 16
@@ -294,7 +282,6 @@ class tumorSeg():
                     high[0, 3, txf:txt, tyf:tyt, tzf:tzt] = t1ce[vxf:vxt, vyf:vyt, vzf:vzt]
 
                     # =========================================================================
-
                     vxf, vxt = max(0, x-ll_pad), min(shape[0], x+lr_pad)
                     vyf, vyt = max(0, y-ll_pad), min(shape[1], y+lr_pad)
                     vzf, vzt = max(0, z-ll_pad), min(shape[2], z+lr_pad)
@@ -308,8 +295,7 @@ class tumorSeg():
                     low[0, 2, txf:txt, tyf:tyt, tzf:tzt]  = t1[vxf:vxt, vyf:vyt, vzf:vzt]
                     low[0, 3, txf:txt, tyf:tyt, tzf:tzt]  = t1ce[vxf:vxt, vyf:vyt, vzf:vzt]
 
-                    # =========================================================================
-                    
+                    # =========================================================================     
                     low1[0] = [resize(low[0, i, :, :, :], (resize_to, resize_to, resize_to)) for i in range(4)]
 
                     high = Variable(torch.from_numpy(high)).to(self.device).float()
@@ -321,45 +307,7 @@ class tumorSeg():
                     final_prediction[:, x:x + prediction_size, 
                                         y:y+prediction_size, 
                                         z:z+prediction_size] = pred[0]
-
-        final_prediction = utils.convert5class_logitsto_4class(final_prediction)
-
         return final_prediction
-
-
-    def inner_class_classification_with_logits_2D(self, 
-                                                    t1ce_volume, 
-                                                    t2_volume, 
-                                                    flair_volume):
-        """
-		output of 2D tiramisu model (MNet)
-		
-		
-        """
-        normalize = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        transformList = []
-        transformList.append(transforms.ToTensor())
-        transformList.append(normalize)
-        transformSequence=transforms.Compose(transformList)
-
-        generated_output = np.empty((self.Mnclasses,flair_volume.shape[0],flair_volume.shape[1],flair_volume.shape[2]))
-        for _slice_ in tqdm(range(flair_volume.shape[2])):
-            flair_slice = utils.scale_every_slice_between_0_to_255(np.transpose(flair_volume[:,:,_slice_]))
-            t2_slice    = utils.scale_every_slice_between_0_to_255(np.transpose(t2_volume[:,:,_slice_]))
-            t1ce_slice  = utils.scale_every_slice_between_0_to_255(np.transpose(t1ce_volume[:,:,_slice_]))
-
-            array        = np.zeros((flair_slice.shape[0],flair_slice.shape[1],3))
-            array[:,:,0] = flair_slice
-            array[:,:,1] = t2_slice
-            array[:,:,2] = t1ce_slice
-            array = np.uint8(array)
-            transformed_array = transformSequence(array)
-            transformed_array = transformed_array.unsqueeze(0)
-            transformed_array = transformed_array.to(self.device)
-            pred = torch.nn.functional.softmax(self.MNET2D(transformed_array).detach().cpu())
-            pred = pred.numpy()
-            generated_output[:, :, :, _slice_] = pred[0]
-        return generated_output
 
 
     def get_segmentation(self, 
@@ -382,31 +330,26 @@ class tumorSeg():
         flair = nib.load(flair_path).get_data()
         affine = nib.load(flair_path).affine
 
-        t1    = preprocessing.clip(t1)
-        t1ce  = preprocessing.clip(t1ce)
-        t2    = preprocessing.clip(t2)
-        flair = preprocessing.clip(flair)
-
-        brain_mask = brainmask.get_brain_mask(t2_path, ants_path = self.ants_path)
-
+        brain_mask = brainmask.get_brain_mask(t2_path)
         mask  =  self.get_localization(t1, t1ce, t2, flair, brain_mask)
 
-
-        if not self.quick:
+        if self.quick:        
+            final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
+            final_prediction_array        = np.array([final_predictionTir3D_logits])
+        else:
             final_predictionTir3D_logits  = self.inner_class_classification_with_logits_NCube(t1, t1ce, t2, flair, brain_mask, mask)
             final_predictionBNET3D_logits = self.inner_class_classification_with_logits_DualPath(t1, t1ce, t2, flair, brain_mask, mask)
-            # final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair).transpose(0, 2, 1, 3)
-            final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits]) #, final_predictionMnet_logits])
-        else:
-            final_predictionMnet_logits   = self.inner_class_classification_with_logits_2D(t1, t2, flair).transpose(0, 2, 1, 3)
-            final_prediction_array        = np.array([final_predictionMnet_logits])
+            final_prediction_array        = np.array([final_predictionTir3D_logits, final_predictionBNET3D_logits])
+
 
         final_prediction_logits = utils.combine_logits_AM(final_prediction_array)
+        final_prediction_logits = utils.convert5class_logitsto_4class(final_prediction_logits)
         # final_pred              = utils.apply_argmax_to_logits(final_prediction_logits)
         final_pred              = postprocessing.densecrf(final_prediction_logits)
-        final_pred              = postprocessing.connected_components(final_pred)
+        final_pred              = postprocessing.class_wise_cc(final_pred)
         final_pred              = utils.combine_mask_prediction(mask, final_pred)
         final_pred              = utils.adjust_classes(final_pred)
+
 
         if save_path:
             os.makedirs(save_path, exist_ok=True)

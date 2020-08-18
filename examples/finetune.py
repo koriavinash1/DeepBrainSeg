@@ -4,15 +4,16 @@ import time
 import torch
 
 sys.path.append('..')
-from DeepBrainSeg.tumor import FineTuner 
+from DeepBrainSeg.tumor import FineTuner , maybe_download
 from DeepBrainSeg.tumor.feedBack import GenerateCSV3D 
 from DeepBrainSeg.tumor.dataGenerator import Generator
 from DeepBrainSeg.tumor.models.modelTir3D import FCDenseNet57
 
+
 from os.path import expanduser
 home = expanduser("~")
 base_ckpt_path = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
-
+maybe_download(base_ckpt_path)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -23,11 +24,11 @@ model.load_state_dict(ckpt['state_dict'])
 
 
 finetune = FineTuner(model,
-					nclasses,
-					'../Logs',
-					device,
-					antehoc_feedback = GenerateCSV3D,
-					gradual_unfreeze = True)
+			nclasses,
+			'../Logs',
+			device,
+			antehoc_feedback = GenerateCSV3D,
+			gradual_unfreeze = True)
 
 
 

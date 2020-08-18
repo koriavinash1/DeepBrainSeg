@@ -104,7 +104,7 @@ def GenerateCSV3D(model,
                         # Logs update
                         pred = np.argmax(pred[0], axis=0)
                         wt, tc, et = _get_dice_score_(pred, mask)
-                        # print(np.unique(pred), np.unique(mask), pred.shape, mask.shape)
+
                         coordinate.append((x, y, z))
                         path.append(spath)
                         backgroundRegion.append(np.mean(mask == 0))
@@ -114,7 +114,6 @@ def GenerateCSV3D(model,
                         brainRegion.append(np.mean(mask > 0))
                         ETDice.append(et); WTDice.append(wt); TCDice.append(tc)
                         
-                        # print(ETDice[-1], WTDice[-1], TCDice[-1], WTRegion[-1], ETRegion[-1])
 
         final_prediction = utils.convert5class_logitsto_4class(final_prediction)
         final_prediction = np.argmax(final_prediction, axis=0).reshape((shape[0], shape[1],shape[2]))

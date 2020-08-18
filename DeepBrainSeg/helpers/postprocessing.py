@@ -61,7 +61,7 @@ def densecrf(logits):
     new_image = np.argmax(Q, axis=0).reshape((shape[0], shape[1],shape[2]))
     return new_image
 
-def connected_components(voxels, threshold=12000):
+def connected_components(voxels, threshold=0.8):
     """
         This clusters entire segmentations into multiple clusters
         and considers significant cluster for further analysis
@@ -77,27 +77,31 @@ def connected_components(voxels, threshold=12000):
 
     c,n = label(voxels)
     nums = np.array([np.sum(c==i) for i in range(1, n+1)])
-    selected_components = nums>threshold
-    selected_components[np.argmax(nums)] = True
+    max_area = np.max(nums)
+
+    selected_components = nums >= (threshold*max_area)
     mask = np.zeros_like(voxels)
 
-    for i,select in enumerate(selected_components):
+    for i, select in enumerate(selected_components):
         if select:
-            mask[c==(i+1)]=1
+            mask[c == (i+1)] = 1
     return mask*voxels
 
 
-def class_wise_cc(logits):
+def class_wise_cc(pred):
     """
         Applies connected components on class wise slices
         
         args
-            logits dimension: nclasses, width, height, depth
+            pred dimension: width, height, depth
         returns
             tensor of same size as logits (uint8)
     """
-    return_ = np.zeros_like(logits)
-    for class_ in range(logits.shape[0]):
-        return_[class_, :, :, :] = connected_components(logits[class_, :, :, :])
 
-    return return_
+    classes = np.unique(pred)
+    return_ = np.zeros(pred.shape)
+    for class_ in classes:
+        if class_ == 0: continue
+        return_ += class_*connected_components(1*(pred == class_))
+        return_ = np.clip(return_, np.min(return_), class_)
+    return np.uint8(return_)

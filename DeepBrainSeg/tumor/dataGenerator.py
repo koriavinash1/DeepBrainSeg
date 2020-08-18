@@ -39,8 +39,6 @@ from torch.utils.data import Dataset
 from ..helpers import preprocessing
 from ..brainmask import get_brain_mask
 
-ants_path = os.path.join('/opt/ANTs/bin/')
-
 
 def nii_loader(paths):
     """
@@ -68,7 +66,7 @@ def nii_loader(paths):
     try:
         brain_mask = nib.load(paths['mask']).get_data()
     except:
-        brain_mask = get_brain_mask(paths['t1'], ants_path)
+        brain_mask = get_brain_mask(paths['t1'])
 
     try:
         seg_mask = np.uint8(nib.load(paths['seg']).get_data())

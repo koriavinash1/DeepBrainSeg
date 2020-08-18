@@ -15,7 +15,7 @@ from os.path import expanduser
 home = expanduser("~")
 import json, shutil
 import subprocess
-
+from .. import ants_path
 
 def maybe_install_ants():
     ants_path = os.path.join(home, '.DeepBrainSeg/ants')
@@ -76,10 +76,27 @@ def maybe_install_bet():
 from .antsmask import (get_ants_mask, ANTS_skull_stripping)
 from .hdbetmask import (get_bet_mask, bet_skull_stripping)
 
-def get_brain_mask(t1_path, ants_path = None):
+
+def get_brain_mask(t1_path, ants_path = ants_path):
+    """
+        extracts brain mask, uses ants if ants_path is not none
+
+        t1_path: path to t1 nifty image
+        ants_path: build directory of ants  
+    """
     if ants_path:
-        maybe_install_ants()
-        return get_ants_mask(ants_path, t1_path)
+        try:
+            mask = get_ants_mask(ants_path, t1_path)
+        except FileNotFoundError as fnf_error:
+            print(fnf_error)
+            maybe_install_ants()
+            mask = get_ants_mask(ants_path, t1_path)
     else:
-        maybe_install_bet()
-        return get_bet_mask(t1_path)
+        try:
+            mask = get_bet_mask(t1_path)
+        except FileNotFoundError as fnf_error:
+            print(fnf_error)
+            maybe_install_bet()
+            mask = get_bet_mask(t1_path)
+
+    return mask

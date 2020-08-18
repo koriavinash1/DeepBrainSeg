@@ -15,3 +15,4 @@ from os.path import expanduser
 home = expanduser("~")
 import json
 
+ants_path = os.path.join('/opt/ANTs/bin/')
