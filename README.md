@@ -18,6 +18,7 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 - [x] Finetuning
   - [x] Hardmining
   - [x] Gradual Unfreezing
+- [ ] Custom netwrok Training Framework
 - [ ] Whole Brain Segmentation
 
 
@@ -25,7 +26,7 @@ This repo utilize a ensemble of 2-D and 3-D fully convoultional neural network (
 
 PyPi based installation:
 
-> python version: 3.5
+**Required Python version: 3.5**
 
 > installation: ```pip install DeepBrainSeg```
 
