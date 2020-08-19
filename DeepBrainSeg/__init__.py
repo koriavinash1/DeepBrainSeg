@@ -14,4 +14,11 @@ from os.path import expanduser
 home = expanduser("~")
 import json
 
-ants_path = os.path.join('/opt/ANTs/bin/')
+
+with open(os.path.join(home, ".DeepBrainSeg/config.json"), "r") as write_file:
+    config = json.load(write_file)
+
+if config['DBS_ANTS']:
+	ants_path = os.path.join('/opt/ANTs/bin/')
+else:
+	ants_path = None

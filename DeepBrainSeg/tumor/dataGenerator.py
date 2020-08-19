@@ -56,17 +56,11 @@ def nii_loader(paths):
             affine: data affine (which will be used in saving)
     """
 
-    flair = nib.load(paths['flair']).get_data()
-    t2 = nib.load(paths['t2']).get_data()
-    t1 = nib.load(paths['t1']).get_data()
-    t1ce = nib.load(paths['t1ce']).get_data()
-    affine = nib.load(paths['t1']).affine
-
 
     try:
         brain_mask = nib.load(paths['mask']).get_data()
     except:
-        brain_mask = get_brain_mask(paths['t1'])
+        brain_mask = get_brain_mask(paths[list(paths.keys())[0]])
 
     try:
         seg_mask = np.uint8(nib.load(paths['seg']).get_data())
@@ -76,21 +70,17 @@ def nii_loader(paths):
     except:
         seg_mask = None
 
-    # t1    = preprocessing.clip(t1)
-    # t1ce  = preprocessing.clip(t1ce)
-    # t2    = preprocessing.clip(t2)
-    # flair = preprocessing.clip(flair)
-
-    t1    = preprocessing.standardize(t1,    brain_mask)
-    t1ce  = preprocessing.standardize(t1ce,   brain_mask)
-    t2    = preprocessing.standardize(t2,    brain_mask)
-    flair = preprocessing.standardize(flair, brain_mask)
-
     data = {}
-    data['flair'] = flair
-    data['t2'] = t2
-    data['t1'] = t1
-    data['t1ce'] = t1ce
+
+    for key in paths.keys():
+        nib_vol = nib.load(paths[key])
+        affine  = nib_vol.affine 
+        vol  = nib_vol.get_data()
+        vol  = preprocessing.clip(vol)
+        data[key] = preprocessing.standardize(vol,
+                                                brain_mask)
+
+
     return data, seg_mask, affine
 
 

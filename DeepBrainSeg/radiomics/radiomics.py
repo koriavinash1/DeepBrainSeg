@@ -30,8 +30,8 @@ import numpy as np
 import pandas as pd
 import SimpleITK as sitk
 import six
-import radiomics
 from tqdm import tqdm
+import pickle
 from radiomics import firstorder, glcm, imageoperations, glrlm, glszm, ngtdm, gldm, getTestCase
 
 class ExtractRadiomicFeatures():
@@ -43,17 +43,23 @@ class ExtractRadiomicFeatures():
                     all_=True):
         
         self.input_image = input_image
-        if not input_mask:
+        if input_mask is None:
             self.input_mask = np.ones(tuple(list(self.input_image.shape)[:-1]))
         else: self.input_mask = input_mask
         
         self.img = sitk.GetImageFromArray(self.input_image)
         self.GT  = sitk.GetImageFromArray(self.input_mask)
         self.save_path = save_path
+        os.makedirs(save_path, exist_ok=True)
         self.seq = seq
         self.all_ = all_
         self.class_ = class_
         self.feat_dict = {}
+
+
+    def write(self, data, path):
+        with open(path, "wb") as write_file:
+            pickle.dump(data, write_file)
 
 
     def first_order(self):
@@ -68,11 +74,10 @@ class ExtractRadiomicFeatures():
             else: 
                 feat_dict[self.seq + "_" + self.class_ + "_" + key] = val
 
-        df = pd.DataFrame(feat_dict)
-        if self.save_path:
-            df.to_csv(os.path.join(self.save_path, 'firstorder_features.csv'), index=False)
+        if self.save_path and (not self.all_):
+            self.write(feat_dict, os.path.join(self.save_path, 'firstorder_features.pickle'))
 
-        return df
+        return feat_dict
 
 
     def glcm_features(self):
@@ -87,11 +92,10 @@ class ExtractRadiomicFeatures():
             else: 
                 glcm_dict[self.seq + "_" + self.class_ + "_" + key] = val
 
-        df = pd.DataFrame(glcm_dict)
-        if self.save_path:
-            df.to_csv(os.path.join(self.save_path, 'glcm_features.csv'), index=False)
+        if self.save_path and (not self.all_):
+            self.write(glcm_dict, os.path.join(self.save_path, 'glcm_features.pickle'))
 
-        return df
+        return glcm_dict
 
 
     def glszm_features(self):
@@ -106,12 +110,11 @@ class ExtractRadiomicFeatures():
             else: 
                 glszm_dict[self.seq + "_" + self.class_ + "_" + key] = val
 
-        df = pd.DataFrame(glszm_dict)
-        if self.save_path:
-            df.to_csv(os.path.join(self.save_path, 'glszm_features.csv'), index=False)
+        if self.save_path and (not self.all_):
+            self.write(glszm_dict, os.path.join(self.save_path, 'glszm_features.pickle'))
 
 
-        return df
+        return glszm_dict
     
     
     def glrlm_features(self):
@@ -127,12 +130,11 @@ class ExtractRadiomicFeatures():
             else: 
                 glrlm_dict[self.seq + "_" + self.class_ + "_" + key] = val
 
-        df = pd.DataFrame(glrlm_dict)
-        if self.save_path:
-            df.to_csv(os.path.join(self.save_path, 'glrlm_features.csv'), index=False)
+        if self.save_path and (not self.all_):
+            self.write(glrlm_dict, os.path.join(self.save_path, 'glrlm_features.pickle'))
 
     
-        return df
+        return glrlm_dict
     
     
     def ngtdm_features(self):
@@ -147,11 +149,10 @@ class ExtractRadiomicFeatures():
             else: 
                 ngtdm_dict[self.seq + "_" + self.class_ + "_" + key] = val
 
-        df = pd.DataFrame(ngtdm_dict)
-        if self.save_path:
-            df.to_csv(os.path.join(self.save_path, 'ngtdm_features.csv'), index=False)
+        if self.save_path and (not self.all_):
+            self.write(ngtdm_dict, os.path.join(self.save_path, 'ngtdm_features.pickle'))
     
-        return df
+        return ngtdm_dict
 
     def gldm_features(self):
 
@@ -166,11 +167,10 @@ class ExtractRadiomicFeatures():
             else: 
                 gldm_dict[self.seq + "_" + self.class_ + "_" + key] = val
 
-        df = pd.DataFrame(gldm_dict)
-        if self.save_path:
-            df.to_csv(os.path.join(self.save_path, 'gldm_features.csv'), index=False)
+        if self.save_path and (not self.all_):
+            self.write(gldm_dict, os.path.join(self.save_path, 'gldm_features.pickle'))
 
-        return df
+        return gldm_dict
 
     
     def all_features(self):
@@ -178,13 +178,11 @@ class ExtractRadiomicFeatures():
         _ = self.first_order()
         _ = self.glcm_features()
         _ = self.glszm_features()
-        _ = self.glrm_features()
+        _ = self.glrlm_features()
         _ = self.gldm_features()
         _ = self.ngtdm_features()
         
-        df = pd.DataFrame(self.feat_dict)
-
         if self.save_path:
-            df.to_csv(os.path.join(self.save_path, 'all_features.csv'), index=False)
+            self.write(self.feat_dict, os.path.join(self.save_path, 'all_features.pickle'))
 
-        return df
+        return self.feat_dict

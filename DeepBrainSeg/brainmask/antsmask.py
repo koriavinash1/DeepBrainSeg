@@ -4,25 +4,25 @@ import os
 import numpy as np
 import nibabel as nib
 
-def ANTS_skull_stripping(t1_path, save_path, ants_path= '/opt/ANTs/bin/'):
-        """
-		We make use of ants framework for generalized skull stripping
-		
-		t1_path: t1 volume path (str)
-		saves the mask in the same location as t1 data directory
-		returns: maskvolume (numpy uint8 type) 
-        """
-        mask = get_ants_mask(ants_path, t1_path)
+def ANTS_skull_stripping(t1_path, save_path, ants_path):
+    """
+	We make use of ants framework for generalized skull stripping
+	
+	t1_path: t1 volume path (str)
+	saves the mask in the same location as t1 data directory
+	returns: maskvolume (numpy uint8 type) 
+    """
+    mask = get_ants_mask(ants_path, t1_path)
 
-        os.makedirs(os.path.basename(save_path), exist_ok=True)
-        nib_obj = nib.load(t1_path)
-        vol = nib_obj.get_data()
-        affine = nib_obj.affine
-        volume = np.uint8(vol*mask)
-        volume = nib.Nifti1Image(volume, affine)
-        volume.set_data_dtype(np.uint8)
-        nib.save(volume, save_path)
-        return volume
+    os.makedirs(os.path.basename(save_path), exist_ok=True)
+    nib_obj = nib.load(t1_path)
+    vol = nib_obj.get_data()
+    affine = nib_obj.affine
+    volume = np.uint8(vol*mask)
+    volume = nib.Nifti1Image(volume, affine)
+    volume.set_data_dtype(np.uint8)
+    nib.save(volume, save_path)
+    return volume
 
 
 def get_ants_mask(ants_path, t1_path):
