@@ -73,6 +73,7 @@ def nii_loader(paths):
     data = {}
 
     for key in paths.keys():
+        if key.lower() in ['seg', 'mask']: continue
         nib_vol = nib.load(paths[key])
         affine  = nib_vol.affine 
         vol  = nib_vol.get_data()

@@ -433,11 +433,12 @@ class FineTuner():
 
 
     #--------------------------------------------------------------------------------
-    def infer (self, ckpt, rootpath, save_path, size = 64):
+    def infer (self, ckpt, rootpath, save_path, size = 64, uncertainity = 8):
 
 
         os.makedirs(save_path, exist_ok = True)
         saved_parms = torch.load(ckpt)
+        uncertainity = 1 if not isinstance(uncertainity, int) else uncertainity
         self.model.load_state_dict(saved_parms['state_dict'])
         self.model.eval()
 
@@ -473,14 +474,41 @@ class FineTuner():
             subject_path = os.path.join(rootpath, subject)
             spath['flair'] = os.path.join(subject_path, subject + '_flair.nii.gz')
             spath['t1ce']  = os.path.join(subject_path, subject + '_t1ce.nii.gz')
-            spath['seg']   = os.path.join(subject_path, subject + '_seg.nii.gz')
             spath['t1']    = os.path.join(subject_path, subject + '_t1.nii.gz')
             spath['t2']    = os.path.join(subject_path, subject + '_t2.nii.gz')
             spath['mask']  = os.path.join(subject_path, 'mask.nii.gz')
 
-            vol, _, affine = nii_loader(spath)
-            logits = __get_logits__(vol)
-            final_prediction_logits = utils.convert5class_logitsto_4class(logits)
+
+            uncertainity_maps = []
+            for i in range(uncertainity):
+
+                vol, _, affine = nii_loader(spath)
+                
+                AXIS = np.arange(len(vol['flair'].shape))
+                NAXIS = np.arange(len(vol['flair'].shape))
+                np.random.shuffle(NAXIS)
+
+                ROTATION = np.random.randint(0, 4)
+
+                # transformations
+                for key in vol.keys():
+                    # apply forward transformation
+                    vol[key] = vol[key].transpose(tuple(NAXIS))
+                    vol[key] = np.rot90(vol[key], ROTATION, axes=(0, 1))
+
+                # estimate logits
+                logits = __get_logits__(vol)
+
+                # Inverse transformation
+                logits = np.rot90(logits, 4-ROTATION, axes=(1, 2))
+                logits = logits.transpose((0,)+tuple(1 + np.array([np.where(NAXIS == i)[0][0] for i in range(len(vol['flair'].shape))])))
+                final_prediction_logits = utils.convert5class_logitsto_4class(logits)
+                uncertainity_maps.append(final_prediction_logits)
+
+            uncertainity_maps = np.array(uncertainity_maps)
+
+
+            final_prediction_logits = np.mean(uncertainity_maps, 0)
             # final_pred = utils.apply_argmax_to_logits(final_prediction_logits)
             final_pred = postprocessing.densecrf(final_prediction_logits)
             final_pred = postprocessing.connected_components(final_pred)
@@ -493,4 +521,21 @@ class FineTuner():
                 path = os.path.join(rootpath, subject, 'DeepBrainSeg_Prediction')
 
             utils.save_volume(final_pred, affine, path)
-        pass
+
+
+            # save uncertanity_maps
+            if uncertainity > 1:
+                uncertainities = np.var(uncertainity_maps, 0)
+                unc_WT = np.mean(uncertainities[0:,...], axis=0)
+                unc_ET = uncertainities[3, ...]
+                unc_TC = uncertainities[1, ...] + uncertainities[3, ...]
+                print(unc_WT.shape, unc_TC.shape, unc_ET.shape)
+                if isinstance(save_path, str):
+                    path = os.path.join(save_path, subject )
+                else:
+                    path = os.path.join(rootpath, subject, 'DeepBrainSeg_Prediction')
+
+                utils.save_volume(unc_WT, affine, path + '_unc_whole')
+                utils.save_volume(unc_ET, affine, path + '_unc_core')
+                utils.save_volume(unc_TC, affine, path + '_unc_enhance')
+        pass    

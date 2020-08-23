@@ -12,7 +12,7 @@ from DeepBrainSeg.tumor.models.modelTir3D import FCDenseNet57
 
 from os.path import expanduser
 home = expanduser("~")
-base_ckpt_path = os.path.join(home, '.DeepBrainSeg/BestModels/Tramisu_3D_FC57_best_acc.pth.tar')
+base_ckpt_path = os.path.join(home, '.DeepBrainSeg/BestModels/tumor_Tramisu_FC57_3D.pth.tar')
 maybe_download(base_ckpt_path)
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -32,13 +32,13 @@ finetune = FineTuner(model,
 
 
 
-finetune.train('../Logs/csv/training.csv',
-              '../Logs/csv/validation.csv',
-              '../sample_volume/brats',
-              trBatchSize = 4, 
-              trMaxEpoch = 50, 
-              DataGenerator = Generator,
-              checkpoint = None)
+# finetune.train('../Logs/csv/training.csv',
+#               '../Logs/csv/validation.csv',
+#               '../sample_volume/brats',
+#               trBatchSize = 4, 
+#               trMaxEpoch = 50, 
+#               DataGenerator = Generator,
+#               checkpoint = None)
 
 
 
