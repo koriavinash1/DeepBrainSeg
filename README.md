@@ -1,6 +1,7 @@
 # DeepBrainSeg
 
 [![PyPI version](https://badge.fury.io/py/DeepBrainSeg.svg)](https://badge.fury.io/py/DeepBrainSeg)
+[![Downloads](https://pepy.tech/badge/deepbrainseg)](https://pepy.tech/project/deepbrainseg)
 [![Documentation Status](https://readthedocs.org/projects/deepbrainseg/badge/?version=latest)](https://deepbrainseg.readthedocs.io/en/latest/?badge=latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
