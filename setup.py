@@ -32,7 +32,7 @@ setuptools.setup(
          'nibabel==3.0.2',
          'SimpleITK==1.2.4',
          'tqdm==4.48.2',
-         'numpy==1.18.5',
+         'numpy==1.21.0',
          'pandas==0.25.3',
          'scipy==1.4.1',
          'pydensecrf==1.0rc3',
