@@ -34,7 +34,7 @@ setuptools.setup(
          'tqdm==4.48.2',
          'numpy==1.18.5',
          'pandas==0.25.3',
-         'scipy==1.4.1',
+         'scipy==1.10.0',
          'pydensecrf==1.0rc3',
          'pyradiomics==3.0',
          'scikit-image==0.15',
