@@ -26,7 +26,7 @@ setuptools.setup(
      url="https://github.com/koriavinash1/DeepBrainSeg",
      packages=setuptools.find_packages(),
      install_requires = [
-         'torch==1.5.1',
+         'torch==1.13.1',
          'torchvision==0.6.1',
          'torchnet==0.0.4',
          'nibabel==3.0.2',

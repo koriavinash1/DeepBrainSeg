@@ -1,5 +1,5 @@
 wget
-torch==1.5.1
+torch==1.13.1
 torchnet==0.0.4
 torchvision==0.6.1
 nibabel==3.0.2
