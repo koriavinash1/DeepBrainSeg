@@ -30,8 +30,8 @@ from helpers import *
 import matplotlib.pyplot as plt
 import os
 
-from DeepBrainSeg import deepSeg
-get_brainsegmentation = deepSeg(quick=False)
+from DeepBrainSeg.tumor import tumorSeg
+get_brainsegmentation = tumorSeg(quick=False)
 
 def vp_start_gui():
     '''Starting point when module is the main routine.'''

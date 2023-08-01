@@ -385,5 +385,5 @@ class tumorSeg():
 # ========================================================================================
 
 if __name__ == '__main__':
-    ext = deepSeg(True)
+    ext = tumorSeg(True)
     ext.get_segmentation_brats('../../sample_volume/Brats18_CBICA_AVG_1/')
